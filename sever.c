@@ -25,15 +25,16 @@ int main()
     sin.sin_port = htons(SERVER_PORT);
 
     /* setup passive open */
-    if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+    if ((s = socket(PF_INET, SOCK_STREAM, 0)) < 0) { // s contains the socket
         perror("simplex-talk: socket");
         exit(1);
     }
-    if ((bind(s, (struct sockaddr*)&sin, sizeof(sin))) < 0) {
+    if ((bind(s, (struct sockaddr*)&sin, sizeof(sin))) < 0) { // s is bound to the port number. Socket will retreive messages from the port.
         perror("simplex-talk: bind");
         exit(1);
     }
-    listen(s, MAX_PENDING);
+
+    listen(s, MAX_PENDING); // s listens to the port
 
     /* wait for connection, then receive and print text */
     while (1) {
@@ -43,6 +44,12 @@ int main()
         }
         while (buf_len = recv(new_s, buf, sizeof(buf), 0))
             fputs(buf, stdout);
+
+        printf("%s", buf)
+
         close(new_s);
+        
+
+
     }
 }
