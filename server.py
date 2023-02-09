@@ -8,6 +8,8 @@ s.listen(5)
 socketclient, address = s.accept()
 print("Connection recieved from another terminal", address)
 
-message = socketclient.recv(1024)
-message = message.decode("utf-8")
-print(message)
+
+while (True):
+    message = socketclient.recv(1024)
+    message = message.decode("utf-8")
+    print(message)
