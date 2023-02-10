@@ -51,13 +51,13 @@ while (True):
         print("2")
 
     elif message == "3":
-        #Show balance
-        message = "LIST"
-        print("3")
-    
-    elif message == "4":
         # List stocks
         message = "BALANCE"
+        print("3")
+
+    elif message == "4":
+        #Show balance
+        message = "LIST"
         print("4")
 
     elif message == "5":
