@@ -105,7 +105,11 @@ create_stock = """
 INSERT INTO
   stocks (stock_symbol, stock_name, stock_amount, stock_balance, user_id)
 VALUES
-  ("MSFT", "MICROSOFT", 12.3, 100.43, 1)
+  ("MSFT", "MICROSOFT", 12.3, 100.43, 1),
+  ("VLE", "VALVE", 14, 20.40, 2),
+  ("AZM", "AMAZON", 20, 20.20, 3),
+  ("BK", "BURGER_KING", 15.5, 200.45, 4),
+  ("RTG", "RIOT_GAMES", 21.5, 50, 5)
 """
 
 # add data to stock table
