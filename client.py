@@ -25,7 +25,7 @@ def userSell():
     price_per_stock = raw_input ("How much the stock costs to buy per stock: ")
     userID = 1
 
-    message = ("SELL " + symbol + " " + stock_amount + " " + price_per_stock + " " + userID)
+    message = ("SELL " + symbol + " " + stock_amount + " " + price_per_stock + " " + str(userID))
     return message
 
 
@@ -72,7 +72,7 @@ while (True):
 
 
     # Wait for reply from server
-    
+
     #reply = s.recv(1024)
     #reply = reply.decode("utf-8")
     #print(reply)
