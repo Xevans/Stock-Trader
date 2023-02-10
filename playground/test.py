@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS stocks (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    stock_symbol TEXT NOT NULL,
    stock_name TEXT,
+   stock_amount REAL,
    stock_balance REAL,
    user_id INTEGER,
    FOREIGN KEY (user_id) REFERENCES users (id)
@@ -86,7 +87,13 @@ create_user = """
 INSERT INTO
   users (first_name, last_name, user_name, password, usd_balance)
 VALUES
-  ('James', 'Ed', "james123", 'eds23', 500)
+  ("James", "Ed", "james123", "eds23", 500.00),
+  ("Todd", "Toodles", "todd123", "todge54", 1000.00),
+  ("Mikey","Crown","mikey123","magic321", 50000.00),
+  ("Gryffon","Skull","gryffon123","yugioh321", 2000.00),
+  ("Ben","Poorards","ben123","pokemon321", 30000.00),
+  ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00),
+  ("Brandon","Linux","brandon123","toby321", 50000.00)
 """
 
 # add data to user table
@@ -96,9 +103,9 @@ execute_query(connection, create_user)
 # define some data to add to stock table
 create_stock = """
 INSERT INTO
-  stocks (stock_symbol, stock_name, stock_balance, user_id)
+  stocks (stock_symbol, stock_name, stock_amount, stock_balance, user_id)
 VALUES
-  ("MSFT", "MICROSOFT", 100.43, 1)
+  ("MSFT", "MICROSOFT", 12.3, 100.43, 1)
 """
 
 # add data to stock table
