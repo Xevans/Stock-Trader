@@ -1,0 +1,39 @@
+Project Log:
+2/10 - Xavier
+working on serverBuy.[complete - xavier]
+
+
+2/11 - Xavier
+Select query selects the row of index id, not the user_id [solved - xavier] 
+  -> select_stock_amount = "SELECT stock_amount FROM stocks WHERE user_id = 7"
+     REF:01 test.py
+
+what if multiple records for a user_id EXISTS [solved - xavier]
+ -> use special cursor. Use and when referencing multiple WHERE
+    -> special_cursor.execute("SELECT stock_amount FROM stocks WHERE user_id = ? AND stock_symbol = ?", (2, "AZM",))
+       REF:02 test.py
+
+what if record does not exist?
+    -> point cursor or special cursor at location and return the length [solved - xavier]
+        of the tuple. if tuple is less than zero, return "record does not exist"
+        -> #special_cursor.execute("SELECT stock_amount FROM stocks WHERE user_id = ? AND stock_symbol = ?", (3, "AZM",))
+           #stocks_stock_amount = special_cursor.fetchall()
+
+           #if len(stocks_stock_amount) == 0:
+           #print("Record not found")
+        REF:03 test.py
+
+2/12 - xavier
+
+serverBuy function has too much complexity. [ongoing - xavier ]
+encapsulate common routines into functional modules.
+   reduces: lines of code. Number of manual calls to cursor object, overall confusion of algorithm
+   increases: speed, modularity of code, tracability, and error tracability
+
+Working on serverSell. [in-progress - xavier]
+
+ 
+2/11 - Ben
+    Working on on if-statements for exceptions of get_id & stock_amount [ongoing - Ben]
+    Working on server messages from command 'BALANCE' 
+    REF:04 test.py

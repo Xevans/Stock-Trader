@@ -1,0 +1,11 @@
+Test case log:
+
+What if user does not enter a number in client command choice.
+
+What if user input fails in functions defined in client.
+
+If client (user err) test cases pass, server can assume correct input.
+
+
+
+

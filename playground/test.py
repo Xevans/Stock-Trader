@@ -49,6 +49,7 @@ def execute_read_query(connection, query):
 
 # call function to est. connection
 connection = create_connection('playground/data.db')
+special_cursor = connection.cursor() # for handing special requests
 
 
 # users table definition 
@@ -93,7 +94,7 @@ VALUES
   ("Gryffon","Skull","gryffon123","yugioh321", 2000.00),
   ("Ben","Poorards","ben123","pokemon321", 30000.00),
   ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00),
-  ("Brandon","Linux","brandon123","toby321", 50000.00)
+  ("Brandon","Linux","brandon123","toby321", 50000.00);
 """
 
 # add data to user table
@@ -107,9 +108,11 @@ INSERT INTO
 VALUES
   ("MSFT", "MICROSOFT", 12.3, 100.43, 1),
   ("VLE", "VALVE", 14, 20.40, 2),
-  ("AZM", "AMAZON", 20, 20.20, 3),
+  ("AZM", "AMAZON", 20, 20.20, 2),
   ("BK", "BURGER_KING", 15.5, 200.45, 4),
-  ("RTG", "RIOT_GAMES", 21.5, 50, 5)
+  ("RTG", "RIOT_GAMES", 21.5, 50, 5),
+  ("GOOG", "GOOGLE", 25.3, 32, 6),
+  ("AAPL", "APPLE", 26.7, 47, 7);
 """
 
 # add data to stock table
@@ -117,7 +120,7 @@ execute_query(connection, create_stock)
 
 
 # point cursor to users table
-select_users = "SELECT * from users"
+select_users = "SELECT * FROM users"
 # retrieve and store in users var
 users = execute_read_query(connection, select_users)
 
@@ -131,6 +134,44 @@ select_stocks = "SELECT * FROM stocks"
 stocks = execute_read_query(connection, select_stocks)
 
 for stock in stocks:
-    print(stocks)
+    print(stock)
 
 
+#REF 03
+#special_cursor.execute("SELECT stock_amount FROM stocks WHERE user_id = ? AND stock_symbol = ?", (3, "AZM",))
+#stocks_stock_amount = special_cursor.fetchall()
+
+#if len(stocks_stock_amount) == 0:
+#   print("Record not found")
+
+#REF: 02 point special cursor to specific row given two rows with same user id
+#special_cursor.execute("SELECT stock_amount FROM stocks WHERE user_id = ? AND stock_symbol = ?", (2, "AZM",))
+#stocks_stock_amount = special_cursor.fetchall()
+
+#REF: 01
+#select_stock_amount = "SELECT stock_amount FROM stocks WHERE user_id = 7"
+
+#stocks_stock_amount = execute_read_query(connection, select_stock_amount)
+
+for s_amount in stocks_stock_amount:
+   print("retrieved: ", s_amount) # outputs valve's current stock amount
+
+#now to update the stock amount
+update_stock_amount = """
+UPDATE
+   stocks
+SET
+   stock_amount = 16.5
+WHERE
+   id = 2
+"""
+
+execute_query(connection, update_stock_amount)
+
+# read location again
+select_stock_amount = "SELECT stock_amount FROM stocks WHERE id = 2"
+
+stocks_stock_amount = execute_read_query(connection, select_stock_amount)
+
+#for s_amount in stocks_stock_amount:
+ #  print(s_amount) 

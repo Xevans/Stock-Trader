@@ -1,0 +1,33 @@
+Server Algorithms:
+
+serverBuy algorithm:
+returns a string
+
+recieves a string [command, symbol, stock_amount, price per stock, user id of seller]
+
+if the user that the client (user1) wants to trade with does not exist
+    return a message "user does not exist"
+
+if the user trades with themselves, return a message:
+    you cannot trade with yourself
+
+if the user cannot afford the the stock, return a message:
+    you have insufficient funds
+
+if the selling user does not have the amount of stock requested,
+    return a message saying that the seller does not have sufficient amount of stock 
+
+update the client's (user1's) balance to reflect the transaction
+update the client's (user1's) stock_balance to reflect the amount of stock accumulate
+    if nothing to accumulate onto (no record for user id 1)
+    create a record in stocks with the same symbol, same company name
+    the accumulated amount of stock, and user 1's id.
+
+update the selling user's balance to reflect the transaction
+update the selling user's stock_ balance to reflect the amount of stock remaining.
+    if the selling user's stock is depleted, set the stock amount to 0
+    
+build and return a string with 
+    [BOUGHT: New balance: stock balance or record for user 1, symbol. USD balance $95.41]
+    ex: BOUGHT: New balance: 3.4 MSFT. USD balance $95.41
+
