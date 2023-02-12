@@ -117,8 +117,8 @@ INSERT INTO
   stocks (stock_symbol, stock_name, stock_balance, user_id)
 VALUES
   ("MSFT", "MICROSOFT", 100.3, 1),
-  ("VLE", "VALVE", 20.40, 2),
-  ("VLE", "VALVE", 10.40, 3),
+  ("VLE", "VALVE", 20.40, 1),
+  ("VLE", "VALVE", 10.40, 2),
   ("AZM", "AMAZON", 20.20, 3),
   ("BK", "BURGER_KING", 200.45, 4),
   ("RTG", "RIOT_GAMES", 50, 5),
@@ -303,26 +303,150 @@ def serverBuy(data):
     return return_message
 
 def serverSell(data):
+
+    this_user = 1
+    symbol = str(data[1])
+    stock_amount = float(data[2])
+    pps = float(data[3])
+    other_user = int(data[4])
+    # data contains list of contents of client request
+        # [command, symbol, stock_amount, price per stock, user id of seller]
     
     # user attempts to sell with themselves
+    if other_user == 1:
+        return "You cannot sell to yourself."
+
 
     # user sells a stock they do not own
+    special_cursor.execute("SELECT stock_symbol FROM stocks WHERE user_id = 1 AND stock_symbol = ?", (symbol,))
+    exists = special_cursor.fetchall()
+
+    if len(exists) == 0:
+        return "You (user1) do not own this stock. \n Use LIST command to see owned stocks"
 
     # buyer (user being sold to) does not exist
+    special_cursor.execute("SELECT user_name FROM users WHERE id = ?", (other_user,))
+    exists = special_cursor.fetchall()
+
+    if len(exists) == 0:
+        return "The user you are selling to does not exist."
+
 
     # user does not have enough stock to sell [less than the amount requested in record]
+    special_cursor.execute("SELECT stock_balance FROM stocks WHERE user_id = ? AND stock_symbol = ?", (this_user, symbol,))
+    initial_stock_bal = special_cursor.fetchall()
+
+    for u_stock_bal in initial_stock_bal:
+        temp = u_stock_bal
+
+    get_init_stock_bal = float(temp[0])
+
+    if ((get_init_stock_bal - stock_amount) < 0):
+        return "You do not have enough stock to complete this transaction."
+
 
     # buyer cannot afford the stock
+    special_cursor.execute("SELECT usd_balance FROM  users WHERE id = ?", (other_user,))
+    initial_other_money = special_cursor.fetchall()
 
-    # transaction sequence
+    for o_balance in initial_other_money:
+        temp = o_balance
 
+    get_o_balance = float(temp[0])
+
+    difference = stock_amount * pps
+
+    if ((get_o_balance - difference) < 0):
+        return "Buyer has insufficient Funds"
+
+
+    # transaction sequence -----
+
+    # add to client user's usd balance
+    special_cursor.execute("SELECT usd_balance FROM users WHERE id = 1")
+    user_bal = special_cursor.fetchall()
+
+    for u_bal in user_bal:
+        temp = u_bal
+
+    get_u_bal = float(temp[0])
+
+    new_u_bal = get_u_bal + difference
+
+    special_cursor.execute("UPDATE users SET usd_balance = ? WHERE id = ?", (new_u_bal, this_user,))
+
+    # deduct the stock balance from client user's acount
+    special_cursor.execute("SELECT stock_balance FROM stocks WHERE user_id = ? AND stock_symbol = ?", (this_user, symbol,))
+    user_stock_bal = special_cursor.fetchall()
+
+    for u_stock_bal in user_stock_bal:
+        temp = u_stock_bal
+
+    get_u_stock_bal = float(temp[0])
+
+    new_u_stock_bal = get_u_stock_bal - stock_amount
+
+    special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE id = ? AND stock_symbol = ?", (new_u_stock_bal, this_user, symbol,))
+
+    # deduct from the buyer's usd balance
+
+    new_o_bal = get_o_balance - difference
+
+    special_cursor.execute("UPDATE users SET usd_balance = ? WHERE id = ?", (new_o_bal, other_user,))
+
+
+    # get name of stock
+    special_cursor.execute("SELECT stock_name FROM stocks WHERE stock_symbol = ? AND user_id = ?", (symbol, this_user,))
+    stock_name = special_cursor.fetchall()
+
+    for s_name in stock_name:
+        temp = s_name
+
+    get_stock_name = str(temp[0])
+
+
+    # see if a record containing the stock symbol exists for the buyer
+    special_cursor.execute("SELECT stock_name FROM stocks WHERE stock_symbol = ? AND user_id = ?", (symbol, other_user,))
+    exists = special_cursor.fetchall()
+
+    if len(exists) == 0:
         # if buyer has no record to accumulate stock
+        #insert a new record
+        insertion_query = """
+        INSERT INTO
+        stocks (stock_symbol, stock_name, stock_balance, user_id)
+        VALUES
+        (?, ?, ?, ?);
+        """
+        #need stock_name
+        tuple_items = (symbol, get_stock_name, stock_amount, other_user)
+        special_cursor.execute(insertion_query, tuple_items)
 
+    else:
         # if buyer has existing record to accumulate stock
 
+        # add to the buyer's stock_amount
+
+        special_cursor.execute("SELECT stock_balance FROM stocks WHERE stock_symbol = ? AND user_id = ?", (symbol, other_user,))
+        o_stock_bal = special_cursor.fetchall()
+
+        print(o_stock_bal)
+        for o_s_bal in o_stock_bal:
+            temp = o_s_bal
+
+        
+        get_o_stock_bal = float(temp[0])
+
+        new_o_stock_bal = get_o_stock_bal + stock_amount
+        special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE user_id = ? AND stock_symbol = ?", (new_o_stock_bal, other_user, symbol,))    
+
+        
+    # commit
+
+    # succeeding message
+    return_message = "SOLD: New balance: " + str(new_u_stock_bal) + " " + symbol + ". USD $" + str(new_u_bal)
     
-    
-    return "Alive"
+    return return_message
 
 
 
