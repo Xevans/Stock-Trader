@@ -154,10 +154,6 @@ def getList():
 
     print(return_message)
     #return(return_message)
-            
-
-def shutdown():
-    s.close 
 
 message = "LIST" # test inputs here
 print(message)
@@ -204,6 +200,7 @@ elif command == "LIST":
 elif command == "SHUTDOWN":
     # Shutdown
     return_message = "SHUTDOWN"
+    s.close()
     return_message = "200 OK"
     # send OK message
 
@@ -217,3 +214,4 @@ elif command == "QUIT":
     return_message = "200 OK"
     # send OK message
     # client does shut down routine
+    

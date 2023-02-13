@@ -8,11 +8,20 @@ def showCommands():
     "Enter 4    | List Stock Records\n" +
     "Enter 5    | Shutdown Server\n" +
     "Enter 6    | End User Session\n")
-
+    #pps float value and non-negative and not to 0 
 def userBuy():
     symbol = raw_input ("Enter Stock Symbol: ")
     stock_amount = raw_input ("How much stock to buy: ")
     price_per_stock = raw_input ("How much the stock costs to buy per stock: ")
+
+    stock_amount = float(stock_amount)
+    price_per_stock = float(price_per_stock)
+
+    if stock_amount != 0 and stock_amount < 0:
+        stock_amount = str(stock_amount)
+    if price_per_stock !=0 and price_per_stock < 0 :
+        price_per_stock = str(price_per_stock)
+
     userID = 1
 
     message = ("BUY " + symbol + " " + stock_amount + " " + price_per_stock + " " + str(userID))
@@ -23,6 +32,12 @@ def userSell():
     symbol = raw_input ("Enter Stock Symbol: ")
     stock_amount = raw_input ("How much stock to buy: ")
     price_per_stock = raw_input ("How much the stock costs to buy per stock: ")
+
+    if stock_amount != 0 and stock_amount < 0:
+            stock_amount = str(stock_amount)
+    if price_per_stock !=0 and price_per_stock < 0 :
+        price_per_stock = str(price_per_stock)
+
     userID = 1
 
     message = ("SELL " + symbol + " " + stock_amount + " " + price_per_stock + " " + str(userID))
@@ -73,14 +88,15 @@ while (True):
     elif message == "6":
         # End Session
         message = "QUIT"
-        s.send(message.encode("utf-8"))
-        s.close()
         print("6")
         #s.close()
 
-    else:
-        print("Invalid Input, Try Again\n")
-        showCommands()
+
+    # Wait for reply from server
+
+    #reply = s.recv(1024)
+    #reply = reply.decode("utf-8")
+    #print(reply)
 
 
     reply = s.recv(1024) #Wait for reply from server

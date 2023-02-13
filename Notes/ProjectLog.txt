@@ -37,3 +37,8 @@ Working on serverSell. [in-progress - xavier]
     Working on on if-statements for exceptions of get_id & stock_amount [ongoing - Ben]
     Working on server messages from command 'BALANCE' 
     REF:04 test.py
+
+
+2/12 - Ben
+   Working on userBuy
+      For the stock_amount and price_per_stock, we want to only return when those are both non-negative, not equal to 0 and are a float
