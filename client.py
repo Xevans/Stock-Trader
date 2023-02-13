@@ -32,6 +32,12 @@ def userSell():
     symbol = raw_input ("Enter Stock Symbol: ")
     stock_amount = raw_input ("How much stock to buy: ")
     price_per_stock = raw_input ("How much the stock costs to buy per stock: ")
+
+    if stock_amount != 0 and stock_amount < 0:
+            stock_amount = str(stock_amount)
+    if price_per_stock !=0 and price_per_stock < 0 :
+        price_per_stock = str(price_per_stock)
+
     userID = 1
 
     message = ("SELL " + symbol + " " + stock_amount + " " + price_per_stock + " " + str(userID))
