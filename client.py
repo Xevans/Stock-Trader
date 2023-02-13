@@ -8,7 +8,7 @@ def showCommands():
     "Enter 4    | List Stock Records\n" +
     "Enter 5    | Shutdown Server\n" +
     "Enter 6    | End User Session\n")
-
+    #pps float value and non-negative and not to 0 
 def userBuy():
     symbol = raw_input ("Enter Stock Symbol: ")
     stock_amount = raw_input ("How much stock to buy: ")
@@ -68,10 +68,13 @@ while (True):
     elif message == "6":
         # End Session
         message = "QUIT"
+        s.close()
         print("6")
         #s.close()
 
-
+    else:
+        print("Invalid Input, Try Again")
+        showCommands()
     # Wait for reply from server
 
     #reply = s.recv(1024)

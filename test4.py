@@ -157,7 +157,13 @@ def getList():
             
 
 def shutdown():
+    #the client can shutdown the server with the ascii string "SHUTDOWN\n"
     s.close 
+
+def quit_the_client():
+    #quit the server 
+    #close the client
+    client.close 
 
 message = "LIST" # test inputs here
 print(message)
