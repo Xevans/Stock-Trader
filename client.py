@@ -13,6 +13,15 @@ def userBuy():
     symbol = raw_input ("Enter Stock Symbol: ")
     stock_amount = raw_input ("How much stock to buy: ")
     price_per_stock = raw_input ("How much the stock costs to buy per stock: ")
+
+    stock_amount = float(stock_amount)
+    price_per_stock = float(price_per_stock)
+
+    if stock_amount != 0 and stock_amount < 0:
+        stock_amount = str(stock_amount)
+    if price_per_stock !=0 and price_per_stock < 0 :
+        price_per_stock = str(price_per_stock)
+
     userID = 1
 
     message = ("BUY " + symbol + " " + stock_amount + " " + price_per_stock + " " + str(userID))
@@ -69,7 +78,7 @@ while (True):
         # End Session
         message = "QUIT"
         s.close()
-        print("6")
+        print("6")      
         #s.close()
 
     else:
