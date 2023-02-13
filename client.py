@@ -38,55 +38,55 @@ while (True):
 
     showCommands() # show user commands
 
-    message = raw_input ("Enter Command: ")
+    message = raw_input("Enter Command: ")
 
     if message == "1":
         # BUY
         message = userBuy()
+        s.send(message.encode("utf-8"))
         print("1")
     
     elif message == "2":
         # SELL
         message = userSell()
+        s.send(message.encode("utf-8"))
         print("2")
 
     elif message == "3":
         # List stocks
         message = "BALANCE"
+        s.send(message.encode("utf-8"))
         print("3")
 
     elif message == "4":
         #Show balance
         message = "LIST"
+        s.send(message.encode("utf-8"))
         print("4")
 
     elif message == "5":
         # Shutdown
         message = "SHUTDOWN"
+        s.send(message.encode("utf-8"))
         print("5")
 
     elif message == "6":
         # End Session
         message = "QUIT"
+        s.send(message.encode("utf-8"))
+        s.close()
         print("6")
         #s.close()
 
-
-    # Wait for reply from server
-
-    #reply = s.recv(1024)
-    #reply = reply.decode("utf-8")
-    #print(reply)
+    else:
+        print("Invalid Input, Try Again\n")
+        showCommands()
 
 
-
-
-
-
+    reply = s.recv(1024) #Wait for reply from server
+    reply = reply.decode("utf-8")
+    print(reply)
 
 
     s.send(message.encode("utf-8"))
 
-    
-
-s.close()
