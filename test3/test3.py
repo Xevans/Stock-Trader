@@ -208,7 +208,6 @@ def serverBuy(data):
     get_balance = float(temp[0])
     
     if (get_balance - (pps * stock_amount) < 0):
-        print("here")
         return "Insufficient funds"
 
     
@@ -430,7 +429,6 @@ def serverSell(data):
         special_cursor.execute("SELECT stock_balance FROM stocks WHERE stock_symbol = ? AND user_id = ?", (symbol, other_user,))
         o_stock_bal = special_cursor.fetchall()
 
-        print(o_stock_bal)
         for o_s_bal in o_stock_bal:
             temp = o_s_bal
 
@@ -448,14 +446,60 @@ def serverSell(data):
     
     return return_message
 
+def getBalance():
 
+    special_cursor.execute("SELECT first_name FROM users WHERE id = 1")
+    fetch_first_name = special_cursor.fetchall()
+
+    for f_name in fetch_first_name:
+        temp = f_name
+
+    get_first_name = str(temp[0])
+
+    special_cursor.execute("SELECT last_name FROM users WHERE id = 1")
+    fetch_last_name = special_cursor.fetchall()
+
+    for l_name in fetch_last_name:
+        temp = l_name
+
+    get_last_name = str(temp[0])
+
+    select_user_balance = "SELECT usd_balance FROM users WHERE id = 1"
+    # users_balance first element convert it to float
+    users_balance = execute_read_query(connection, select_user_balance)
+
+    for u_balance in users_balance:
+        temp = u_balance
+
+    get_balance = float(temp[0])
+
+    return_message = "Balance for user, " + get_first_name + " " + get_last_name + ": $" + str(get_balance) + "\n"
+    return return_message
+
+
+
+
+def getList():
+    select_stocks = "SELECT id, stock_symbol, stock_balance, user_id FROM stocks"
+    records = execute_read_query(connection, select_stocks)
+    
+    return_message = ""
+    for tuple in records:
+        return_message += "\n"
+        for item in tuple:
+            #print(item)
+            return_message += str(item)
+            return_message += " "
+
+
+    return(return_message)
 
 #conversation loop
 
 
 
 
-message = "SELL VLE 3.4 1.35 2" # test inputs here
+message = "BALANCE" # test inputs here
 
 # determine which command
 data = message.split()
@@ -464,8 +508,8 @@ command = data[0]
 # BUY
 if command == "BUY": 
     # calculate and update
-    #return_message = serverBuy(data)
-    #print(return_message)
+    return_message = serverBuy(data)
+    print(return_message)
     #send result
     return_message = "200 OK"
     # send OK message
@@ -483,13 +527,15 @@ elif command == "SELL":
 elif command == "BALANCE":
     # Display the balance of user 1
     # send balance
-    #return_message = getBalance(data) 
+    return_message = getBalance()
+    print(return_message)
     # send OK message
     return_message = "200 OK"
 #LIST
 elif command == "LIST":
     #Show balance
-    #return_message = getList()
+    return_message = getList()
+    print(return_message)
     # send
     return_message = "200 OK"
     # send OK message
@@ -500,7 +546,7 @@ elif command == "SHUTDOWN":
     return_message = "SHUTDOWN"
     return_message = "200 OK"
     # send OK message
-
+    #s.close()
     # shut down server
 
 #QUIT
