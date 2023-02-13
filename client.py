@@ -69,6 +69,7 @@ while (True):
         # End Session
         message = "QUIT"
         print("6")
+        #s.close()
 
 
     # Wait for reply from server
