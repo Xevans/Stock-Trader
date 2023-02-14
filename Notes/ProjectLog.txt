@@ -55,8 +55,7 @@ Could tweak code to allow user to buy stocks and sell stocks with
    serverSell would simply delete records without DNE checks on buyer
 
 
-Known problems: 
-   - database adds duplicate records every time server.py is run.
 
-Known problems in s.py
-   - sell does not update stock balance
+
+Known problems in s.py [single user]
+   - sell does not update stock balance [FIXED]
