@@ -280,7 +280,7 @@ def serverBuy(data):
     special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE user_id = ? AND stock_symbol = ?", (new_other_balance, other_user, symbol))
 
     # commit changes
-    #connection.commit() 
+    connection.commit() 
 
     # succeeding return message
     return_message = "BOUGHT: New balance: " + str(new_stock_balance) + " " + symbol + ". USD balance $" + str(new_user_balance)
@@ -370,7 +370,7 @@ def serverSell(data):
 
     new_u_stock_bal = get_u_stock_bal - stock_amount
 
-    special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE id = ? AND stock_symbol = ?", (new_u_stock_bal, this_user, symbol,))
+    special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE user_id = ? AND stock_symbol = ?", (new_u_stock_bal, this_user, symbol,))
 
     # deduct from the buyer's usd balance
 
@@ -425,6 +425,7 @@ def serverSell(data):
 
         
     # commit
+    connection.commit()
 
     # succeeding message
     return_message = "SOLD: New balance: " + str(new_u_stock_bal) + " " + symbol + ". USD $" + str(new_u_bal)
@@ -550,7 +551,6 @@ while (True):
         return_message = getList()
         return_message += "\n200 OK"
         # send
-        print("in end list")
         socketclient.sendall(return_message.encode("utf-8"))
 
     #SHUTDOWN
@@ -574,4 +574,5 @@ while (True):
         socketclient.send(return_message.encode("utf-8"))
         # client does shut down routine
 
+connection.close()
 s.close()

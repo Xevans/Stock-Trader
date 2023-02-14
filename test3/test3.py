@@ -295,7 +295,7 @@ def serverBuy(data):
     special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE user_id = ? AND stock_symbol = ?", (new_other_balance, other_user, symbol))
 
     # commit changes
-    #connection.commit() 
+    connection.commit() 
 
     # succeeding return message
     return_message = "BOUGHT: New balance: " + str(new_stock_balance) + " " + symbol + ". USD balance $" + str(new_user_balance)
@@ -373,6 +373,7 @@ def serverSell(data):
     new_u_bal = get_u_bal + difference
 
     special_cursor.execute("UPDATE users SET usd_balance = ? WHERE id = ?", (new_u_bal, this_user,))
+    connection.commit()
 
     # deduct the stock balance from client user's acount
     special_cursor.execute("SELECT stock_balance FROM stocks WHERE user_id = ? AND stock_symbol = ?", (this_user, symbol,))
@@ -385,7 +386,20 @@ def serverSell(data):
 
     new_u_stock_bal = get_u_stock_bal - stock_amount
 
-    special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE id = ? AND stock_symbol = ?", (new_u_stock_bal, this_user, symbol,))
+    print("This balance: ", new_u_stock_bal)
+
+    special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE stock_symbol = ? AND user_id = ?", (new_u_stock_bal, symbol, this_user,))
+
+
+    special_cursor.execute("SELECT stock_balance FROM stocks WHERE user_id = ? AND stock_symbol = ?", (this_user, symbol))
+    grab_balance = special_cursor.fetchall()
+
+    for bal in grab_balance:
+        temp = bal
+
+    print("This updated balance: ", str(temp[0]))
+
+
 
     # deduct from the buyer's usd balance
 
@@ -420,6 +434,7 @@ def serverSell(data):
         #need stock_name
         tuple_items = (symbol, get_stock_name, stock_amount, other_user)
         special_cursor.execute(insertion_query, tuple_items)
+        connection.commit()
 
     else:
         # if buyer has existing record to accumulate stock
@@ -436,11 +451,14 @@ def serverSell(data):
         get_o_stock_bal = float(temp[0])
 
         new_o_stock_bal = get_o_stock_bal + stock_amount
-        special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE user_id = ? AND stock_symbol = ?", (new_o_stock_bal, other_user, symbol,))    
+        special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE user_id = ? AND stock_symbol = ?", (new_u_stock_bal, other_user, symbol,))
+            
 
         
     # commit
+    connection.commit()
 
+    
     # succeeding message
     return_message = "SOLD: New balance: " + str(new_u_stock_bal) + " " + symbol + ". USD $" + str(new_u_bal)
     
@@ -480,9 +498,8 @@ def getBalance():
 
 
 def getList():
-    select_stocks = "SELECT id, stock_symbol, stock_balance, user_id FROM stocks"
-    records = execute_read_query(connection, select_stocks)
-    
+    special_cursor.execute("SELECT id, stock_symbol, stock_balance, user_id FROM stocks")
+    records = special_cursor.fetchall()
     return_message = ""
     for tuple in records:
         return_message += "\n"
@@ -490,70 +507,74 @@ def getList():
             #print(item)
             return_message += str(item)
             return_message += " "
-
-
     return(return_message)
 
 #conversation loop
 
+lock = True
 
+while True:
+    
+    message = "BALANCE"
+    if lock == True:
+        message = "SELL VLE 3.2 10 4" # test inputs here
+        lock = False
 
+    # determine which command
+    data = message.split()
+    command = data[0]
 
-message = "BALANCE" # test inputs here
+    # BUY
+    if command == "BUY": 
+        # calculate and update
+        return_message = serverBuy(data)
+        print(return_message)
+        #send result
+        return_message = "200 OK"
+        # send OK message
 
-# determine which command
-data = message.split()
-command = data[0]
+    # SELL
+    elif command == "SELL": 
+        # calculate and update
+        return_message = serverSell(data)
+        print(return_message)
+        #send result
+        return_message = "200 OK"
+        # send OK message
 
-# BUY
-if command == "BUY": 
-    # calculate and update
-    return_message = serverBuy(data)
-    print(return_message)
-    #send result
-    return_message = "200 OK"
-    # send OK message
+    # BALANCE
+    elif command == "BALANCE":
+        # Display the balance of user 1
+        # send balance
+        return_message = getBalance()
+        print(return_message)
+        # send OK message
+        return_message = "200 OK"
+        break
+    #LIST
+    elif command == "LIST":
+        #Show balance
+        return_message = getList()
+        print(return_message)
+        # send
+        return_message = "200 OK"
+        # send OK message
+        #break
 
-# SELL
-elif command == "SELL": 
-    # calculate and update
-    return_message = serverSell(data)
-    print(return_message)
-    #send result
-    return_message = "200 OK"
-    # send OK message
+    #SHUTDOWN
+    elif command == "SHUTDOWN":
+        # Shutdown
+        return_message = "SHUTDOWN"
+        return_message = "200 OK"
+        # send OK message
+        #s.close()
+        # shut down server
 
-# BALANCE
-elif command == "BALANCE":
-    # Display the balance of user 1
-    # send balance
-    return_message = getBalance()
-    print(return_message)
-    # send OK message
-    return_message = "200 OK"
-#LIST
-elif command == "LIST":
-    #Show balance
-    return_message = getList()
-    print(return_message)
-    # send
-    return_message = "200 OK"
-    # send OK message
-
-#SHUTDOWN
-elif command == "SHUTDOWN":
-    # Shutdown
-    return_message = "SHUTDOWN"
-    return_message = "200 OK"
-    # send OK message
-    #s.close()
-    # shut down server
-
-#QUIT
-elif command == "QUIT":
-    # End Session
-    return_message = "QUIT"
-    # send message
-    return_message = "200 OK"
-    # send OK message
-    # client does shut down routine
+    #QUIT
+    elif command == "QUIT":
+        # End Session
+        return_message = "QUIT"
+        # send message
+        return_message = "200 OK"
+        # send OK message
+        # client does shut down routine

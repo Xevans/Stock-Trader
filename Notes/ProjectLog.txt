@@ -53,3 +53,10 @@ Could tweak code to allow user to buy stocks and sell stocks with
    no buyer/seller parameters.
    serverBuy would simply add records without DNE checks on the seller
    serverSell would simply delete records without DNE checks on buyer
+
+
+Known problems: 
+   - database adds duplicate records every time server.py is run.
+
+Known problems in s.py
+   - sell does not update stock balance
