@@ -1,4 +1,7 @@
 import socket
+import time
+#from signal import signal, SIGPIPE, SIG_DFL
+#signal(SIGPIPE, SIG_DFL)
 
 def showCommands():
     print(
@@ -8,46 +11,40 @@ def showCommands():
     "Enter 4    | List Stock Records\n" +
     "Enter 5    | Shutdown Server\n" +
     "Enter 6    | End User Session\n")
-    #pps float value and non-negative and not to 0 
+
 def userBuy():
     symbol = raw_input ("Enter Stock Symbol: ")
     stock_amount = raw_input ("How much stock to buy: ")
     price_per_stock = raw_input ("How much the stock costs to buy per stock: ")
+    userID = raw_input ("Which user would you like to buy from: ")
 
-    stock_amount = float(stock_amount)
-    price_per_stock = float(price_per_stock)
-
-    if stock_amount != 0 and stock_amount < 0:
-        stock_amount = str(stock_amount)
-    if price_per_stock !=0 and price_per_stock < 0 :
-        price_per_stock = str(price_per_stock)
-
-    userID = 1
-
-    message = ("BUY " + symbol + " " + stock_amount + " " + price_per_stock + " " + str(userID))
+    message = ("BUY " + symbol + " " + str(stock_amount) + " " + str(price_per_stock) + " " + str(userID))
     return message
 
     
 def userSell():
     symbol = raw_input ("Enter Stock Symbol: ")
-    stock_amount = raw_input ("How much stock to buy: ")
+    stock_amount = raw_input ("How much stock to sell: ")
     price_per_stock = raw_input ("How much the stock costs to buy per stock: ")
+    userID = raw_input ("Which user would you like to sell to: ")
 
-    if stock_amount != 0 and stock_amount < 0:
-            stock_amount = str(stock_amount)
-    if price_per_stock !=0 and price_per_stock < 0 :
-        price_per_stock = str(price_per_stock)
-
-    userID = 1
-
-    message = ("SELL " + symbol + " " + stock_amount + " " + price_per_stock + " " + str(userID))
+    message = ("SELL " + symbol + " " + str(stock_amount) + " " + str(price_per_stock) + " " + str(userID))
     return message
+
+
+
+
+
+
+
+
 
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 host = socket.gethostname()
-port = 5320
+port = 5310
 s.connect((host, port))
+#s.sendall("Hello!".encode("utf-8"))
 
 while (True):
 
@@ -59,50 +56,61 @@ while (True):
         # BUY
         message = userBuy()
         s.send(message.encode("utf-8"))
-        print("1")
+        #send(message)
+        reply = s.recv(1024) #reply from server
+        print("\n" + reply + "\n")
     
     elif message == "2":
         # SELL
         message = userSell()
         s.send(message.encode("utf-8"))
-        print("2")
+        #send(message)
+        reply = s.recv(1024) #reply from server
+        print("\n" + reply + "\n")
 
     elif message == "3":
         # List stocks
         message = "BALANCE"
         s.send(message.encode("utf-8"))
-        print("3")
+        #send(message)
+        reply = s.recv(1024) #reply from server
+        print("\n" + reply + "\n")
 
     elif message == "4":
         #Show balance
         message = "LIST"
-        s.send(message.encode("utf-8"))
-        print("4")
+        s.sendall(message.encode("utf-8"))
+        #send(message)
+        reply = s.recv(1024) #reply from server
+        print("\n" + reply + "\n")
+
 
     elif message == "5":
         # Shutdown
         message = "SHUTDOWN"
-        s.send(message.encode("utf-8"))
-        print("5")
+        s.sendall(message.encode("utf-8"))
+        #send(message)
+        reply = s.recv(1024) #reply from server
+        print("\n" + reply + "\n")
+        break
 
     elif message == "6":
         # End Session
         message = "QUIT"
-        print("6")
-        #s.close()
+        s.send(message.encode("utf-8"))
+        #send(message)
+        reply = s.recv(1024) #reply from server
+        print("\n" + reply + "\n")
+        s.shutdown(1)
+        break
+
+    else:
+        print("Invalid Input, Try Again\n")
+        showCommands()
 
 
-    # Wait for reply from server
-
-    #reply = s.recv(1024)
-    #reply = reply.decode("utf-8")
-    #print(reply)
-
-
-    reply = s.recv(1024) #Wait for reply from server
-    reply = reply.decode("utf-8")
-    print(reply)
-
-
-    s.send(message.encode("utf-8"))
-
+s.close()
+    
+    
+    
+    

@@ -42,3 +42,14 @@ Working on serverSell. [in-progress - xavier]
 2/12 - Ben
    Working on userBuy
       For the stock_amount and price_per_stock, we want to only return when those are both non-negative, not equal to 0 and are a float
+
+
+2/14 - Xavier
+Client and server messages now exchange with no broken pipe errors.
+Assignment implies a single user trading with themselves.
+Current project assumes a user (user1) transacts with other users.
+
+Could tweak code to allow user to buy stocks and sell stocks with
+   no buyer/seller parameters.
+   serverBuy would simply add records without DNE checks on the seller
+   serverSell would simply delete records without DNE checks on buyer

@@ -1,6 +1,8 @@
 import socket
 import sqlite3
 from sqlite3 import Error
+#from signal import signal, SIGPIPE, SIG_DFL
+#signal(SIGPIPE, SIG_DFL)
 #pylance does not recognize errors
 
 #****************************************************************************************
@@ -78,7 +80,7 @@ execute_query(connection, create_stocks_table)
 
 # define some data to add to user table
 create_user = """
-INSERT INTO
+INSERT OR IGNORE INTO
   users (first_name, last_name, user_name, password, usd_balance)
 VALUES
   ("James", "Ed", "james123", "eds23", 500.00),
@@ -96,7 +98,7 @@ execute_query(connection, create_user)
 
 # define some data to add to stock table
 create_stock = """
-INSERT INTO
+INSERT OR IGNORE INTO
   stocks (stock_symbol, stock_name, stock_balance, user_id)
 VALUES
   ("MSFT", "MICROSOFT", 100.43, 1),
@@ -478,19 +480,38 @@ def getList():
     return(return_message)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # establish connections
 s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 host = socket.gethostname()
-port = 5320
+port = 5310
 s.bind((host, port))
 s.listen(5)
 socketclient, address = s.accept()
 print("Connection recieved from another terminal", address) #I.E. Client-Server Connection Successful 
 
-
 #conversation loop
 while (True):
+    
+    
+
     message = socketclient.recv(1024)
+    if not message:
+        print ("No message recieved...\n")
+        break
     message = message.decode("utf-8")
     print("Recieved: " + str(message))
 
@@ -504,7 +525,7 @@ while (True):
         return_message = serverBuy(data)
         return_message += "\n200 OK"
         #send result
-        s.send(return_message.encode("utf-8"))
+        socketclient.send(return_message.encode("utf-8"))
     
     # SELL
     elif command == "SELL": 
@@ -512,7 +533,7 @@ while (True):
         return_message = serverSell(data)
         return_message += "\n200 OK"
         # send result
-        s.send(return_message.encode("utf-8"))
+        socketclient.send(return_message.encode("utf-8"))
 
     # BALANCE
     elif command == "BALANCE":
@@ -521,7 +542,7 @@ while (True):
         # send balance
         return_message += "\n200 OK"
         print(return_message)
-        s.send(return_message.encode("utf-8"))
+        socketclient.send(return_message.encode("utf-8"))
 
     #LIST
     elif command == "LIST":
@@ -529,8 +550,8 @@ while (True):
         return_message = getList()
         return_message += "\n200 OK"
         # send
-        s.send(return_message.encode("utf-8"))
-
+        print("in end list")
+        socketclient.sendall(return_message.encode("utf-8"))
 
     #SHUTDOWN
     elif command == "SHUTDOWN":
@@ -538,10 +559,11 @@ while (True):
         return_message = "SHUTDOWN"
         # send
         return_message += "\n200 OK"
-        s.send(return_message.encode("utf-8"))
+        socketclient.send(return_message.encode("utf-8"))
         print("Shutting down.\n")
         # shut down server
-        s.close()
+        s.shutdown(1)
+        break
 
     #QUIT
     elif command == "QUIT":
@@ -549,5 +571,7 @@ while (True):
         return_message = "QUIT"
         # send message
         return_message += "\n200 OK"
-        s.send(return_message.encode("utf-8"))
+        socketclient.send(return_message.encode("utf-8"))
         # client does shut down routine
+
+s.close()
