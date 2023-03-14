@@ -1,0 +1,50 @@
+Note that buy sell and list are searching the stock table for ints when they are now string names
+
+Have a user in the data base user name: root; password: root0
+
+update conditional operations loop to determine is a user is root.
+    for example: if LIST condition
+                    if user is root: run  list all
+                    else: run list for that user
+
+Only root user can shut down the server
+
+
+Whenever an operation fails or cannot be completed
+    return the required error message
+
+payload: (Users: Type String First Name, ID #) 
+
+Server is the only component being multithreaded, to handle multiple instances of clients
+
+in client, allow user to enter an ip address
+
+in server, the client should only be able to login or quit if login_success & root_user is FALSE
+
+
+3/14
+Handling Active user tracking:
+    change ip list to active_users
+        a list of tuples
+        each tuple contains a name and an ip
+        EX: [(John, 123.432.21.234), (Andy, 325,43,55,654),]
+
+        tuple is a zip between two lists: first names, ip_addresses
+        The zipping only occurs in WHO function when ran
+
+        when a user quits, remove the matching ip and user name from the list
+    
+
+3/14 - Xavier
+Login unit tested in test5 and is working correctly
+    - server accepts command and checks user provided user name and password against database
+    - if exists
+        - user pay load is created containing user's record info
+        - user's log in status and root status are updated, providing access to logged in user level commands
+        - user's first name and ip added to global list
+        - output confirming log in
+    - else
+        - output log in fail, wait for client to send another command.
+
+Addressed issue with database where database initialized duplicate records on subsequent runs.
+--------------------------------------------------------------------------------------------------

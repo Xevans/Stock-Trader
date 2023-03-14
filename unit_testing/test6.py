@@ -1,9 +1,9 @@
 import socket
 import sqlite3
 from sqlite3 import Error
-#from signal import signal, SIGPIPE, SIG_DFL
-#signal(SIGPIPE, SIG_DFL)
-#pylance does not recognize errors
+from _thread import *
+import threading
+import time
 
 #****************************************************************************************
 #SQLITE3 setup
@@ -43,7 +43,7 @@ def execute_read_query(connection, query):
 
 
 # call function to est. connection
-connection = create_connection('data.db')
+connection = create_connection('unit_testing/test6/data.db')
 special_cursor = connection.cursor() # for handing special requests
 
 
@@ -67,6 +67,7 @@ CREATE TABLE IF NOT EXISTS stocks (
    stock_name TEXT,
    stock_amount REAL,
    stock_balance REAL,
+   first_name TEXT,
    user_id INTEGER,
    FOREIGN KEY (user_id) REFERENCES users (id)
 );
@@ -78,40 +79,45 @@ execute_query(connection, create_users_table)
 execute_query(connection, create_stocks_table)
 
 
-# define some data to add to user table
-create_user = """
-INSERT OR IGNORE INTO
-  users (first_name, last_name, user_name, password, usd_balance)
-VALUES
-  ("James", "Ed", "james123", "eds23", 500.00),
-  ("Todd", "Toodles", "todd123", "todge54", 1000.00),
-  ("Mikey","Crown","mikey123","magic321", 50000.00),
-  ("Gryffon","Skull","gryffon123","yugioh321", 2000.00),
-  ("Ben","Poorards","ben123","pokemon321", 30000.00),
-  ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00),
-  ("Brandon","Linux","brandon123","toby321", 50000.00);
-"""
+# if table is empty insert the following users
+special_cursor.execute("SELECT * FROM users")
+if (len(special_cursor.fetchall()) < 1):
+    # define some data to add to user table
+    create_user = """
+    INSERT OR IGNORE INTO
+    users (first_name, last_name, user_name, password, usd_balance)
+    VALUES
+    ("James", "Ed", "james123", "eds23", 500.00),
+    ("Todd", "Toodles", "todd123", "todge54", 1000.00),
+    ("Mikey","Crown","mikey123","magic321", 50000.00),
+    ("Gryffon","Skull","gryffon123","yugioh321", 2000.00),
+    ("Ben","Poorards","ben123","pokemon321", 30000.00),
+    ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00),
+    ("Brandon","Linux","brandon123","toby321", 50000.00);
+    """
 
-# add data to user table
-execute_query(connection, create_user)  
+    # add data to user table
+    execute_query(connection, create_user)  
 
+# define some data to add to stock table if table empty
+special_cursor.execute("SELECT * FROM stocks")
+if (len(special_cursor.fetchall()) < 1):
 
-# define some data to add to stock table
-create_stock = """
-INSERT OR IGNORE INTO
-  stocks (stock_symbol, stock_name, stock_balance, user_id)
-VALUES
-  ("MSFT", "MICROSOFT", 100.43, 1),
-  ("VLE", "VALVE", 20.40, 2),
-  ("AZM", "AMAZON", 20.20, 3),
-  ("BK", "BURGER_KING", 200.45, 4),
-  ("RTG", "RIOT_GAMES", 50, 5),
-  ("GOOG", "GOOGLE", 32, 6),
-  ("AAPL", "APPLE", 47, 7);
-"""
+    create_stock = """
+    INSERT OR IGNORE INTO
+    stocks (stock_symbol, stock_name, stock_balance, user_id)
+    VALUES
+    ("MSFT", "MICROSOFT", 100.43, "James"),
+    ("VLE", "VALVE", 20.40, "Todd"),
+    ("AZM", "AMAZON", 20.20, "Mikey"),
+    ("BK", "BURGER_KING", 200.45, "Gryffon"),
+    ("RTG", "RIOT_GAMES", 50, "Ben"),
+    ("GOOG", "GOOGLE", 32, "Xavier"),
+    ("AAPL", "APPLE", 47, "Brandon");
+    """
 
-# add data to stock table
-execute_query(connection, create_stock)
+    # add data to stock table
+    execute_query(connection, create_stock)
 
 #SQLITE3 setup end
 #****************************************************************************************
@@ -483,96 +489,137 @@ def getList():
 
 
 
+def userLogin(data):
+    user_name = data[1]
+    password = data[2]
+    payload = []
+    login_staus = False
+    root_status = False
 
 
+    # user sells a stock they do not own
+    special_cursor.execute("SELECT first_name, last_name, usd_balance, id FROM users WHERE user_name = ? AND password = ?", (user_name, password,))
+    exists = special_cursor.fetchall()
 
+    if len(exists) == 0:
+        return -1
 
+    # extract data from tuple and return
+    for tuple in exists:
+        for item in tuple:
+            print(item)
+            payload.append(item)
 
+    login_staus = True
 
-
-
-
-
-
-
-# establish connections
-s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-host = socket.gethostname()
-port = 5310
-s.bind((host, port))
-s.listen(5)
-socketclient, address = s.accept()
-print("Connection recieved from another terminal", address) #I.E. Client-Server Connection Successful 
-
-#conversation loop
-while (True):
+    #if the user is root
+    if payload[0] == "root":
+        root_status = True
     
+    return login_staus, root_status, payload
+
+
+
+
+
+# assume user logged in already
+
+
+active_users = []
+def operations():
+
     
+    login_status = True 
+    root_status = False
+    shut_down_status = False
+    user_payload = ["James", "Ed", "james123", "500.00", "1"] # first name, last name, balance, id
+    #conversation loop
+    while (True):
+        
+        message = "LOGIN james123 eds23"
 
-    message = socketclient.recv(1024)
-    if not message:
-        print ("No message recieved...\n")
-        break
-    message = message.decode("utf-8")
-    print("Recieved: " + str(message))
+        # determine which command
+        data = message.split()
+        command = data[0]
 
-    # determine which command
-    data = message.split()
-    command = data[0]
 
-    # BUY
-    if command == "BUY": 
-        # calculate and update
-        return_message = serverBuy(data)
-        return_message += "\n200 OK"
-        #send result
-        socketclient.send(return_message.encode("utf-8"))
-    
-    # SELL
-    elif command == "SELL": 
-        # calculate and update
-        return_message = serverSell(data)
-        return_message += "\n200 OK"
-        # send result
-        socketclient.send(return_message.encode("utf-8"))
+        if command == "LOGIN":
+            print("login")
+            try:
+                login_status, root_status, user_payload = userLogin(data)
+            except:
+                print("user does not exist.")
+                return_message = "Error: user does not exist."
+                break # do not incorporate this break in server.py
+            else:
+                print("User does exist.")
+                break
 
-    # BALANCE
-    elif command == "BALANCE":
-        # Display the balance of user 1
-        return_message = getBalance()
-        # send balance
-        return_message += "\n200 OK"
-        print(return_message)
-        socketclient.send(return_message.encode("utf-8"))
+            
+        if login_status == True:
+            # BUY
+            if command == "BUY": 
+                # calculate and update
+                return_message = serverBuy(data)
+                return_message += "\n200 OK"
+                #send result
+            
+            # SELL
+            elif command == "SELL": 
+                # calculate and update
+                return_message = serverSell(data)
+                return_message += "\n200 OK"
+                # send result
 
-    #LIST
-    elif command == "LIST":
-        #Show balance
-        return_message = getList()
-        return_message += "\n200 OK"
-        # send
-        socketclient.sendall(return_message.encode("utf-8"))
+            # BALANCE
+            elif command == "BALANCE":
+                # Display the balance of user 1
+                return_message = getBalance()
+                # send balance
+                return_message += "\n200 OK"
+                print(return_message)
 
-    #SHUTDOWN
-    elif command == "SHUTDOWN":
-        # Shutdown
-        return_message = "SHUTDOWN"
-        # send
-        return_message += "\n200 OK"
-        socketclient.send(return_message.encode("utf-8"))
-        print("Shutting down.\n")
-        # shut down server
-        s.shutdown(1)
-        break
+            #LIST
+            elif command == "LIST":
+                #Show list
+                if root_status == True:
+                    return_message = getList()
+                else:
+                    print("Get list for this user")
+                    #call func that lists stocks owned by user
+                return_message += "\n200 OK"
+                # send
 
-    #QUIT
-    elif command == "QUIT":
-        # End Session
-        return_message = "QUIT"
-        # send message
-        return_message += "\n200 OK"
-        socketclient.send(return_message.encode("utf-8"))
-        # client does shut down routine
+            #SHUTDOWN
+            elif command == "SHUTDOWN":
+                if root_status == True:
+                    # Shutdown
+                    return_message = "SHUTDOWN"
+                    # send
+                    return_message += "\n200 OK"
+                    print("Shutting down.\n")
+                    # shut down server
+                    shut_down_status = True
+                else:
+                    print("not a root user")
+                    # send err message to client
 
-connection.close()
-s.close()
+
+            #QUIT
+            elif command == "QUIT":
+                # End Session
+                return_message = "QUIT"
+                # send message
+                return_message += "\n200 OK"
+
+                # remove matching ip address from ip list.
+
+                print("quit")
+                # client does shut down routine
+        else:
+            print("user is not logged in.")
+            # send message to client
+
+  
+operations()
+
