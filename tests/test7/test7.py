@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS stocks (
    stock_name TEXT,
    stock_amount REAL,
    stock_balance REAL,
-   first_name TEXT,
+   user_name TEXT,
    user_id INTEGER,
    FOREIGN KEY (user_id) REFERENCES users (id)
 );
@@ -107,15 +107,15 @@ if (len(special_cursor.fetchall()) < 1):
 
     create_stock = """
     INSERT OR IGNORE INTO
-    stocks (stock_symbol, stock_name, stock_balance, user_id)
+    stocks (stock_symbol, stock_name, stock_balance, user_name, user_id)
     VALUES
-    ("MSFT", "MICROSOFT", 100.43, "James"),
-    ("VLE", "VALVE", 20.40, "Todd"),
-    ("AZM", "AMAZON", 20.20, "Mikey"),
-    ("BK", "BURGER_KING", 200.45, "Gryffon"),
-    ("RTG", "RIOT_GAMES", 50, "Ben"),
-    ("GOOG", "GOOGLE", 32, "Xavier"),
-    ("AAPL", "APPLE", 47, "Brandon");
+    ("MSFT", "MICROSOFT", 100.43, "James123", 1),
+    ("VLE", "VALVE", 20.40, "Todd123", 2),
+    ("AZM", "AMAZON", 20.20, "Mikey123", 3),
+    ("BK", "BURGER_KING", 200.45, "Gryffon123", 4),
+    ("RTG", "RIOT_GAMES", 50, "Ben123", 5),
+    ("GOOG", "GOOGLE", 32, "Xavier123", 6),
+    ("AAPL", "APPLE", 47, "Brandon123", 8);
     """
 
     # add data to stock table
@@ -481,19 +481,20 @@ def getList():
     for tuple in records:
         return_message += "\n"
         for item in tuple:
-            #print(item)
+            print(item)
             return_message += str(item)
             return_message += " "
 
 
     return(return_message)
 
-def getUserList(user_name):
+def getUserList(user_id):
 
-    select_stocks = "SELECT id, stock_symbol, stock_balance, user_id FROM stocks WHERE user_name = ?", (user_name,)
-    records = execute_read_query(connection, select_stocks)
+    special_cursor.execute("SELECT id, stock_symbol, stock_balance FROM stocks WHERE user_id = ?", (user_id,))
+    records = special_cursor.fetchall()
     
     return_message = ""
+    
     for tuple in records:
         return_message += "\n"
         for item in tuple:
@@ -501,8 +502,11 @@ def getUserList(user_name):
             return_message += str(item)
             return_message += " "
 
-
+    print("Return message for userList: " + return_message)
     return(return_message)
+
+
+
 
 
 
@@ -512,8 +516,9 @@ def getActiveUsers():
     for name in active_user_first_names:
         for ip in active_user_ip_addresses:
             return_message += name + "  " + ip + "\n"
-
     return return_message 
+
+
 
 
 
@@ -526,7 +531,7 @@ def userLogin(data):
 
 
     # user sells a stock they do not own
-    special_cursor.execute("SELECT first_name, last_name, usd_balance, id FROM users WHERE user_name = ? AND password = ?", (user_name, password,))
+    special_cursor.execute("SELECT first_name, last_name, usd_balance, user_name, id FROM users WHERE user_name = ? AND password = ?", (user_name, password,))
     exists = special_cursor.fetchall()
 
     if len(exists) == 0:
@@ -569,10 +574,11 @@ def operations():
     debug_lock = 0
     while (True):
         
+        print("lock count: ", debug_lock)
         if debug_lock == 1:
             message = "WHO"
         elif debug_lock == 2:
-            message == "LIST"
+            message = "LIST"
         else:
             message = "LOGIN james123 eds23"
 
@@ -622,7 +628,6 @@ def operations():
                 return_message = getActiveUsers()
                 print(return_message)
                 debug_lock += 1
-                break
             
             # BUY
             elif command == "BUY": 
@@ -650,13 +655,16 @@ def operations():
             elif command == "LIST":
                 #Show list
                 if root_status == True:
+                    print("get list for root")
                     return_message = getList()
                 else:
                     print("Get list for this user")
-                    return_message = getUserList(user_payload[3])
+                    #return_message = getList()
+                    return_message = getUserList(user_payload[4])
                     #call func that lists stocks owned by user
                 return_message += "\n200 OK"
                 # send
+                debug_lock += 1
 
             #SHUTDOWN
             elif command == "SHUTDOWN":
@@ -675,6 +683,9 @@ def operations():
         else:
             print("user is not logged in.")
             # send message to client
+
+        if debug_lock == 3:
+            break
 
   
 operations()

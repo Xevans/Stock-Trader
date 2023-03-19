@@ -43,7 +43,7 @@ def execute_read_query(connection, query):
 
 
 # call function to est. connection
-connection = create_connection('tests/test7/data.db')
+connection = create_connection('tests/test8/data.db')
 special_cursor = connection.cursor() # for handing special requests
 
 
@@ -66,9 +66,8 @@ CREATE TABLE IF NOT EXISTS stocks (
    id INTEGER PRIMARY KEY AUTOINCREMENT,
    stock_symbol TEXT NOT NULL,
    stock_name TEXT,
-   stock_amount REAL,
    stock_balance REAL,
-   first_name TEXT,
+   user_name TEXT,
    user_id INTEGER,
    FOREIGN KEY (user_id) REFERENCES users (id)
 );
@@ -107,15 +106,15 @@ if (len(special_cursor.fetchall()) < 1):
 
     create_stock = """
     INSERT OR IGNORE INTO
-    stocks (stock_symbol, stock_name, stock_balance, user_id)
+    stocks (stock_symbol, stock_name, stock_balance, user_name, user_id)
     VALUES
-    ("MSFT", "MICROSOFT", 100.43, "James"),
-    ("VLE", "VALVE", 20.40, "Todd"),
-    ("AZM", "AMAZON", 20.20, "Mikey"),
-    ("BK", "BURGER_KING", 200.45, "Gryffon"),
-    ("RTG", "RIOT_GAMES", 50, "Ben"),
-    ("GOOG", "GOOGLE", 32, "Xavier"),
-    ("AAPL", "APPLE", 47, "Brandon");
+    ("MSFT", "MICROSOFT", 100.43, "James123", 1),
+    ("VLE", "VALVE", 20.40, "Todd123", 2),
+    ("AZM", "AMAZON", 20.20, "Mikey123", 3),
+    ("BK", "BURGER_KING", 200.45, "Gryffon123", 4),
+    ("RTG", "RIOT_GAMES", 50, "Ben123", 5),
+    ("GOOG", "GOOGLE", 32, "Xavier123", 6),
+    ("AAPL", "APPLE", 47, "Brandon123", 8);
     """
 
     # add data to stock table
@@ -517,6 +516,30 @@ def getActiveUsers():
 
 
 
+def lookup(symbol, id):
+    #special_cursor.execute("SELECT stock_symbol, user_id FROM stocks WHERE stock_symbol = ? AND user_id = ?", (symbol, payload[3]))
+    #results = special_cursor.fetchall()
+
+    partial_symbol = "%" + symbol + "%"
+
+    special_cursor.execute("SELECT stock_symbol, user_id FROM stocks WHERE stock_symbol LIKE ?", (partial_symbol,))
+    results = special_cursor.fetchall()
+
+    return_message = ""
+
+    # go through all records pulled from selection
+    # only return the records that contain user id of the current user
+    for tuples in results:
+        print(tuples)
+        if tuples[1] == id:
+            return_message += "\n"
+            for items in tuples:
+                print(items)
+                return_message += str(items) + " "
+
+
+
+
 def userLogin(data):
     user_name = data[1]
     password = data[2]
@@ -563,16 +586,15 @@ def operations():
     login_status = False 
     root_status = False
     shut_down_status = False
-    user_payload = [] # first name, last name, balance, user name, password, id
+    user_payload = [] # first name, last name, balance, user name, id
     #conversation loop
 
     debug_lock = 0
     while (True):
         
         if debug_lock == 1:
-            message = "WHO"
-        elif debug_lock == 2:
-            message == "LIST"
+            message = "LOOKUP MSFT"
+            print("test")
         else:
             message = "LOGIN james123 eds23"
 
@@ -626,8 +648,9 @@ def operations():
 
             elif command == "LOOKUP":
                 print("lookup")
-                lock
-
+                symbol = data[1]
+                lookup(symbol, user_payload[3])
+                debug_lock += 1
             
             # BUY
             elif command == "BUY": 
@@ -680,6 +703,9 @@ def operations():
         else:
             print("user is not logged in.")
             # send message to client
+
+        if debug_lock == 2:
+            break
 
   
 operations()
