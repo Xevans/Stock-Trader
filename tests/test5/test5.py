@@ -55,7 +55,8 @@ CREATE TABLE IF NOT EXISTS users (
    last_name TEXT,
    user_name TEXT NOT NULL,
    password TEXT,
-   usd_balance REAL NOT NULL
+   usd_balance REAL NOT NULL,
+   root_status INTEGER
 );
 """
 
@@ -85,15 +86,16 @@ if (len(special_cursor.fetchall()) < 1):
     # define some data to add to user table
     create_user = """
     INSERT OR IGNORE INTO
-    users (first_name, last_name, user_name, password, usd_balance)
+    users (first_name, last_name, user_name, password, usd_balance, root_status)
     VALUES
-    ("James", "Ed", "james123", "eds23", 500.00),
-    ("Todd", "Toodles", "todd123", "todge54", 1000.00),
-    ("Mikey","Crown","mikey123","magic321", 50000.00),
-    ("Gryffon","Skull","gryffon123","yugioh321", 2000.00),
-    ("Ben","Poorards","ben123","pokemon321", 30000.00),
-    ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00),
-    ("Brandon","Linux","brandon123","toby321", 50000.00);
+    ("James", "Ed", "james123", "eds23", 500.00, 0),
+    ("Todd", "Toodles", "todd123", "todge54", 1000.00, 0),
+    ("Mikey","Crown","mikey123","magic321", 50000.00, 0),
+    ("Gryffon","Skull","gryffon123","yugioh321", 2000.00, 0),
+    ("Ben","Poorards","ben123","pokemon321", 30000.00, 0),
+    ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00, 0),
+    ("root", "Roots", "Mr.Root", "r00t", 30000.00, 1),
+    ("Brandon","Linux","brandon123","toby321", 50000.00, 0);
     """
 
     # add data to user table
@@ -498,7 +500,7 @@ def userLogin(data):
 
 
     # user sells a stock they do not own
-    special_cursor.execute("SELECT first_name, last_name, usd_balance, id FROM users WHERE user_name = ? AND password = ?", (user_name, password,))
+    special_cursor.execute("SELECT first_name, last_name, usd_balance, id, root_status FROM users WHERE user_name = ? AND password = ?", (user_name, password,))
     exists = special_cursor.fetchall()
 
     if len(exists) == 0:
@@ -513,7 +515,7 @@ def userLogin(data):
     login_staus = True
 
     #if the user is root
-    if payload[0] == "root":
+    if int(payload[4]) == 1:
         root_status = True
     
     return login_staus, root_status, payload
@@ -532,7 +534,7 @@ active_users = () # zip the above to this global tuple
 def operations():
     a_users = ()
 
-    ip = "237.43.54.345"
+    ip = "237.43.54.345" # would be passed into operations routine
     login_status = False 
     root_status = False
     shut_down_status = False
@@ -540,7 +542,7 @@ def operations():
     #conversation loop
     while (True):
         
-        message = "LOGIN james123 eds23"
+        message = "LOGIN Mr.Root r00t"
 
         # determine which command
         data = message.split()
@@ -617,20 +619,20 @@ def operations():
                     # send err message to client
 
 
-            #QUIT
-            elif command == "QUIT":
-                # End Session
-                return_message = "QUIT"
-                # send message
-                return_message += "\n200 OK"
+        #QUIT
+        if command == "QUIT":
+            # End Session
+            return_message = "QUIT"
+            # send message
+            return_message += "\n200 OK"
 
-                # remove user from active list
-                active_user_first_names.remove(user_payload[0])
-                active_user_ip_addresses.remove(ip)
+            # remove user from active list
+            active_user_first_names.remove(user_payload[0])
+            active_user_ip_addresses.remove(ip)
 
 
-                print("quit")
-                # client does shut down routine
+            print("quit")
+            # client does shut down routine
         else:
             print("user is not logged in.")
             # send message to client

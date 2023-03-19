@@ -21,6 +21,14 @@ in client, allow user to enter an ip address
 
 in server, the client should only be able to login or quit if login_success & root_user is FALSE
 
+Test outline:
+
+Test 5: LOGIN testing (Done)
+Test 6: LOGOUT testing (Done)
+Test 7: WHO and LIST command testing (partially done. Multithreaded testing needed)
+Test 8: LOOKUP testing
+Test 9: DEPOSIT
+
 
 3/14
 Handling Active user tracking:
@@ -47,4 +55,29 @@ Login unit tested in test5 and is working correctly
         - output log in fail, wait for client to send another command.
 
 Addressed issue with database where database initialized duplicate records on subsequent runs.
---------------------------------------------------------------------------------------------------
+DO NOT KEEP PASSWORD IN PAYLOAD (BAD)
+
+
+3/15
+
+To allow for multiple roots. Add a column in table called isRoot. 0 or 1. If 1: user is a root, otherwise not a root (Done)
+
+
+3/19 - Xavier
+
+implementing LOOKUP. server recieves LOOKUP followed by a stock symbol.
+    Look up will only return the best matches (stock records) for that logged in user.
+    Lookup should return the best matches even when given a partial name for a stock.
+
+
+**NOTE about multithreading.
+
+Make a note of all critical sections in each module.
+
+Method 1: Put command modules (i.e. logine, buy, sell, etc.) in a wrapper function.
+    In wrapper, surround actual module call by lock acquire and release.
+
+Method 2: in command modules, surround code block by lock acquire and release.
+
+
+

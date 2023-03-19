@@ -3,6 +3,7 @@ import sqlite3
 from sqlite3 import Error
 from _thread import *
 import threading
+import time
 
 #****************************************************************************************
 #SQLITE3 setup
@@ -42,7 +43,7 @@ def execute_read_query(connection, query):
 
 
 # call function to est. connection
-connection = create_connection('data.db')
+connection = create_connection('tests/test6/data.db')
 special_cursor = connection.cursor() # for handing special requests
 
 
@@ -54,7 +55,8 @@ CREATE TABLE IF NOT EXISTS users (
    last_name TEXT,
    user_name TEXT NOT NULL,
    password TEXT,
-   usd_balance REAL NOT NULL
+   usd_balance REAL NOT NULL,
+   root_status INTEGER
 );
 """
 
@@ -67,6 +69,7 @@ CREATE TABLE IF NOT EXISTS stocks (
    stock_amount REAL,
    stock_balance REAL,
    first_name TEXT,
+   user_id INTEGER,
    FOREIGN KEY (user_id) REFERENCES users (id)
 );
 """
@@ -77,40 +80,46 @@ execute_query(connection, create_users_table)
 execute_query(connection, create_stocks_table)
 
 
-# define some data to add to user table
-create_user = """
-INSERT OR IGNORE INTO
-  users (first_name, last_name, user_name, password, usd_balance)
-VALUES
-  ("James", "Ed", "james123", "eds23", 500.00),
-  ("Todd", "Toodles", "todd123", "todge54", 1000.00),
-  ("Mikey","Crown","mikey123","magic321", 50000.00),
-  ("Gryffon","Skull","gryffon123","yugioh321", 2000.00),
-  ("Ben","Poorards","ben123","pokemon321", 30000.00),
-  ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00),
-  ("Brandon","Linux","brandon123","toby321", 50000.00);
-"""
+# if table is empty insert the following users
+special_cursor.execute("SELECT * FROM users")
+if (len(special_cursor.fetchall()) < 1):
+    # define some data to add to user table
+    create_user = """
+    INSERT OR IGNORE INTO
+    users (first_name, last_name, user_name, password, usd_balance, root_status)
+    VALUES
+    ("James", "Ed", "james123", "eds23", 500.00, 0),
+    ("Todd", "Toodles", "todd123", "todge54", 1000.00, 0),
+    ("Mikey","Crown","mikey123","magic321", 50000.00, 0),
+    ("Gryffon","Skull","gryffon123","yugioh321", 2000.00, 0),
+    ("Ben","Poorards","ben123","pokemon321", 30000.00, 0),
+    ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00, 0),
+    ("root", "Roots", "Mr.Root", "r00t", 30000.00, 1),
+    ("Brandon","Linux","brandon123","toby321", 50000.00, 0);
+    """
 
-# add data to user table
-execute_query(connection, create_user)  
+    # add data to user table
+    execute_query(connection, create_user)  
 
+# define some data to add to stock table if table empty
+special_cursor.execute("SELECT * FROM stocks")
+if (len(special_cursor.fetchall()) < 1):
 
-# define some data to add to stock table
-create_stock = """
-INSERT OR IGNORE INTO
-  stocks (stock_symbol, stock_name, stock_balance, user_id)
-VALUES
-  ("MSFT", "MICROSOFT", 100.43, "James"),
-  ("VLE", "VALVE", 20.40, "Todd"),
-  ("AZM", "AMAZON", 20.20, "Mikey"),
-  ("BK", "BURGER_KING", 200.45, "Gryffon"),
-  ("RTG", "RIOT_GAMES", 50, ""Ben),
-  ("GOOG", "GOOGLE", 32, "Xavier"),
-  ("AAPL", "APPLE", 47, "Brandon");
-"""
+    create_stock = """
+    INSERT OR IGNORE INTO
+    stocks (stock_symbol, stock_name, stock_balance, user_id)
+    VALUES
+    ("MSFT", "MICROSOFT", 100.43, "James"),
+    ("VLE", "VALVE", 20.40, "Todd"),
+    ("AZM", "AMAZON", 20.20, "Mikey"),
+    ("BK", "BURGER_KING", 200.45, "Gryffon"),
+    ("RTG", "RIOT_GAMES", 50, "Ben"),
+    ("GOOG", "GOOGLE", 32, "Xavier"),
+    ("AAPL", "APPLE", 47, "Brandon");
+    """
 
-# add data to stock table
-execute_query(connection, create_stock)
+    # add data to stock table
+    execute_query(connection, create_stock)
 
 #SQLITE3 setup end
 #****************************************************************************************
@@ -485,44 +494,58 @@ def getList():
 def userLogin(data):
     user_name = data[1]
     password = data[2]
+    payload = []
+    login_staus = False
+    root_status = False
 
 
     # user sells a stock they do not own
-    special_cursor.execute("SELECT first_name, last_name, usd_balance, id FROM users WHERE user_name = ? AND password = ?", (user_name, password,))
+    special_cursor.execute("SELECT first_name, last_name, usd_balance, id, root_status FROM users WHERE user_name = ? AND password = ?", (user_name, password,))
     exists = special_cursor.fetchall()
 
     if len(exists) == 0:
         return -1
 
     # extract data from tuple and return
+    for tuple in exists:
+        for item in tuple:
+            print(item)
+            payload.append(item)
+
+    login_staus = True
+
+    #if the user is root
+    if int(payload[4]) == 1:
+        root_status = True
+    
+    return login_staus, root_status, payload
 
 
 
 
 
-
-
+# assume user logged in already
 
 
 active_user_first_names = []
 active_user_ip_addresses = []
-active_users = () # zip the above to this global tuple in login procedure below
+def operations():
 
-def operations(socketclient, ip):
-
-    
-    login_status, root_status, shut_down_status = False
-    user_payload = [] # first name, last name, balance, user name, password, id
+    ip = "237.43.54.345" # this would be passed in to operations 
+    login_status = False 
+    root_status = False
+    shut_down_status = False
+    user_payload = []
     #conversation loop
+    debug_lock = 0
     while (True):
         
+        if debug_lock == 1:
+            message = "LOGOUT"
+        else:
+            message = "LOGIN james123 eds23"
 
-        message = socketclient.recv(1024)
-        if not message:
-            print ("No message recieved...\n")
-            break
-        message = message.decode("utf-8")
-        print("Recieved: " + str(message))
+
 
         # determine which command
         data = message.split()
@@ -536,17 +559,48 @@ def operations(socketclient, ip):
             except:
                 print("user does not exist.")
                 return_message = "Error: user does not exist."
-                socketclient.send(return_message.encode("utf-8"))
+                break # do not incorporate this break in server.py
+            else:
+                print("User does exist.")
+                #updating active users list of tuples
+                active_user_first_names.append(user_payload[0])
+                active_user_ip_addresses.append(ip)
+
+                debug_lock += 1
+
+                
+
+
+        #QUIT
+        elif command == "QUIT":
+            # End Session
+            return_message = "QUIT"
+            # send message
+            return_message += "\n200 OK"
+
+            # remove matching ip address from ip list.
+
+            print("quit")
+            # client does shut down routine
 
             
         if login_status == True:
+
+            if command == "LOGOUT":
+                print("logout")
+                login_status = False
+                root_status = False
+                active_user_first_names.remove(user_payload[0])
+                active_user_ip_addresses.remove(ip)
+                user_payload.clear() # not necessary since each thread has its own instance.
+                break
+
             # BUY
-            if command == "BUY": 
+            elif command == "BUY": 
                 # calculate and update
                 return_message = serverBuy(data)
                 return_message += "\n200 OK"
                 #send result
-                socketclient.send(return_message.encode("utf-8"))
             
             # SELL
             elif command == "SELL": 
@@ -554,7 +608,6 @@ def operations(socketclient, ip):
                 return_message = serverSell(data)
                 return_message += "\n200 OK"
                 # send result
-                socketclient.send(return_message.encode("utf-8"))
 
             # BALANCE
             elif command == "BALANCE":
@@ -563,7 +616,6 @@ def operations(socketclient, ip):
                 # send balance
                 return_message += "\n200 OK"
                 print(return_message)
-                socketclient.send(return_message.encode("utf-8"))
 
             #LIST
             elif command == "LIST":
@@ -575,7 +627,6 @@ def operations(socketclient, ip):
                     #call func that lists stocks owned by user
                 return_message += "\n200 OK"
                 # send
-                socketclient.sendall(return_message.encode("utf-8"))
 
             #SHUTDOWN
             elif command == "SHUTDOWN":
@@ -584,59 +635,19 @@ def operations(socketclient, ip):
                     return_message = "SHUTDOWN"
                     # send
                     return_message += "\n200 OK"
-                    socketclient.send(return_message.encode("utf-8"))
                     print("Shutting down.\n")
                     # shut down server
-                    socketclient.shutdown(1)
                     shut_down_status = True
-
                 else:
                     print("not a root user")
                     # send err message to client
 
 
-        #QUIT
-        if command == "QUIT":
-            # End Session
-            return_message = "QUIT"
-            # send message
-            return_message += "\n200 OK"
-
-            # remove matching ip address from ip list.
-
-            #break so that 
-
-            socketclient.send(return_message.encode("utf-8"))
-            # client does shut down routine
+        
         else:
             print("user is not logged in.")
             # send message to client
 
-    connection.close()
-    socketclient.close()    
+  
+operations()
 
-
-############ MAIN ############
-# establish connections
-def main():
-    s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    host = socket.gethostname()
-    port = 5310
-    s.bind((host, port))
-    s.listen(10) #10 user support   
-    p_lock = threading.Lock()
-
-
-    while True:
-        socketclient, address = s.accept()
-        #p_lock.acquire()
-        print("Connection recieved from another terminal") #I.E. Client-Server Connection Successful
-        print("Currently connected to: ", address[0], ": ", address[1])
-
-        start_new_thread(operations, (socketclient, address[0],))
-
-        
-
-
-###Start
-main()

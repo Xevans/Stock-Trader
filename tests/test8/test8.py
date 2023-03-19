@@ -43,7 +43,7 @@ def execute_read_query(connection, query):
 
 
 # call function to est. connection
-connection = create_connection('unit_testing/test6/data.db')
+connection = create_connection('tests/test7/data.db')
 special_cursor = connection.cursor() # for handing special requests
 
 
@@ -55,7 +55,8 @@ CREATE TABLE IF NOT EXISTS users (
    last_name TEXT,
    user_name TEXT NOT NULL,
    password TEXT,
-   usd_balance REAL NOT NULL
+   usd_balance REAL NOT NULL,
+   root_status INTEGER
 );
 """
 
@@ -85,15 +86,16 @@ if (len(special_cursor.fetchall()) < 1):
     # define some data to add to user table
     create_user = """
     INSERT OR IGNORE INTO
-    users (first_name, last_name, user_name, password, usd_balance)
+    users (first_name, last_name, user_name, password, usd_balance, root_status)
     VALUES
-    ("James", "Ed", "james123", "eds23", 500.00),
-    ("Todd", "Toodles", "todd123", "todge54", 1000.00),
-    ("Mikey","Crown","mikey123","magic321", 50000.00),
-    ("Gryffon","Skull","gryffon123","yugioh321", 2000.00),
-    ("Ben","Poorards","ben123","pokemon321", 30000.00),
-    ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00),
-    ("Brandon","Linux","brandon123","toby321", 50000.00);
+    ("James", "Ed", "james123", "eds23", 500.00, 0),
+    ("Todd", "Toodles", "todd123", "todge54", 1000.00, 0),
+    ("Mikey","Crown","mikey123","magic321", 50000.00, 0),
+    ("Gryffon","Skull","gryffon123","yugioh321", 2000.00, 0),
+    ("Ben","Poorards","ben123","pokemon321", 30000.00, 0),
+    ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00, 0),
+    ("root", "Roots", "Mr.Root", "r00t", 30000.00, 1),
+    ("Brandon","Linux","brandon123","toby321", 50000.00, 0);
     """
 
     # add data to user table
@@ -486,6 +488,32 @@ def getList():
 
     return(return_message)
 
+def getUserList(user_name):
+
+    select_stocks = "SELECT id, stock_symbol, stock_balance, user_id FROM stocks WHERE user_name = ?", (user_name,)
+    records = execute_read_query(connection, select_stocks)
+    
+    return_message = ""
+    for tuple in records:
+        return_message += "\n"
+        for item in tuple:
+            #print(item)
+            return_message += str(item)
+            return_message += " "
+
+
+    return(return_message)
+
+
+
+def getActiveUsers():
+    return_message = ""
+
+    for name in active_user_first_names:
+        for ip in active_user_ip_addresses:
+            return_message += name + "  " + ip + "\n"
+
+    return return_message 
 
 
 
@@ -522,25 +550,37 @@ def userLogin(data):
 
 
 
-# assume user logged in already
+# testing user login and ip append
 
 
-active_users = []
+active_user_first_names = []
+active_user_ip_addresses = []
+active_users = () # zip the above to this global tuple
+
 def operations():
 
-    
-    login_status = True 
+    ip = "237.43.54.345" # would be passed into operations routine
+    login_status = False 
     root_status = False
     shut_down_status = False
-    user_payload = ["James", "Ed", "james123", "500.00", "1"] # first name, last name, balance, id
+    user_payload = [] # first name, last name, balance, user name, password, id
     #conversation loop
+
+    debug_lock = 0
     while (True):
         
-        message = "LOGIN james123 eds23"
+        if debug_lock == 1:
+            message = "WHO"
+        elif debug_lock == 2:
+            message == "LIST"
+        else:
+            message = "LOGIN james123 eds23"
 
         # determine which command
         data = message.split()
         command = data[0]
+
+
 
 
         if command == "LOGIN":
@@ -553,12 +593,44 @@ def operations():
                 break # do not incorporate this break in server.py
             else:
                 print("User does exist.")
-                break
+                #updating active users list of tuples
+                active_user_first_names.append(user_payload[0])
+                active_user_ip_addresses.append(ip)
+                
+                debug_lock += 1
+
+         #QUIT
+        elif command == "QUIT":
+            # End Session
+            return_message = "QUIT"
+            # send message
+            return_message += "\n200 OK"
+
+            # remove user from active list
+            active_user_first_names.remove(user_payload[0])
+            active_user_ip_addresses.remove(ip)
+
+
+            print("quit")
+            # client does shut down routine
 
             
         if login_status == True:
+            #WHO
+            if command == "WHO":
+                print("WHO")
+                return_message = getActiveUsers()
+                print(return_message)
+                debug_lock += 1
+                break
+
+            elif command == "LOOKUP":
+                print("lookup")
+                lock
+
+            
             # BUY
-            if command == "BUY": 
+            elif command == "BUY": 
                 # calculate and update
                 return_message = serverBuy(data)
                 return_message += "\n200 OK"
@@ -586,6 +658,7 @@ def operations():
                     return_message = getList()
                 else:
                     print("Get list for this user")
+                    return_message = getUserList(user_payload[3])
                     #call func that lists stocks owned by user
                 return_message += "\n200 OK"
                 # send
@@ -604,22 +677,11 @@ def operations():
                     print("not a root user")
                     # send err message to client
 
-
-            #QUIT
-            elif command == "QUIT":
-                # End Session
-                return_message = "QUIT"
-                # send message
-                return_message += "\n200 OK"
-
-                # remove matching ip address from ip list.
-
-                print("quit")
-                # client does shut down routine
         else:
             print("user is not logged in.")
             # send message to client
 
   
 operations()
+print("here")
 
