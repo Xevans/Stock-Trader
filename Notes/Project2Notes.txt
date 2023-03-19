@@ -26,7 +26,7 @@ Test outline:
 Test 5: LOGIN testing (Done)
 Test 6: LOGOUT testing (Done)
 Test 7: WHO and LIST command testing (partially done. Multithreaded testing needed)
-Test 8: LOOKUP testing
+Test 8: LOOKUP testing (Done)
 Test 9: DEPOSIT
 
 
@@ -79,5 +79,12 @@ Method 1: Put command modules (i.e. logine, buy, sell, etc.) in a wrapper functi
 
 Method 2: in command modules, surround code block by lock acquire and release.
 
+Other notes for server.py:
+    - redact stock amount. Stock balance does the same thing
+    - fist stock records initialization to match test 8.
+        - stock symbol, stock name, stock balance, user name, reference_id
+    - modify buy and sell operations to mirror s.py and c.py.
+        - users will not be trading with each other. Just buying and selling arbitrarily
+            - DO preserve the trading code however, in another file.
 
 
