@@ -27,8 +27,7 @@ Test 5: LOGIN testing (Done)
 Test 6: LOGOUT testing (Done)
 Test 7: WHO and LIST command testing (partially done. Multithreaded testing needed)
 Test 8: LOOKUP testing (Done)
-Test 9: DEPOSIT
-
+Test 9: DEPOSIT (Done)
 
 3/14
 Handling Active user tracking:
@@ -88,3 +87,24 @@ Other notes for server.py:
             - DO preserve the trading code however, in another file.
 
 
+All unit testing completed for new modules.
+
+Current task: clean up buy and sell methods to be arbitrary as listed in the above notes.
+
+Remaining tasks:
+    - Clean up buy method (server.py)
+    - Clean up sell method (server.py)
+
+
+    
+    - Add tested modules to server.py
+        - test each individually
+            - use debug lock and predetermined inputs to test modules
+    
+    - modify client to be able to send commands for new functionalities
+    -  test client server with new functionalities - single thread
+    
+    - modify server for multi-threaded useage (add thread locks around critical sections).
+        - re-test each module with a minimum of 3 users threads.
+
+    - rename user payload in operations to user_data

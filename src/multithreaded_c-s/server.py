@@ -119,72 +119,23 @@ execute_query(connection, create_stock)
 #data is a list
 #BUY
 #BUY
-def serverBuy(data):
+def serverBuy(this_user, client_payload):
 
-    this_user = 1
-    symbol = str(data[1])
-    stock_amount = float(data[2])
-    pps = float(data[3])
-    other_user = int(data[4])
-    # data contains list of contents of client request
+    #client_payload contains: BUY SYMBOL AMOUNT PPS
+    symbol = str(client_payload[1])
+    stock_amount = float(client_payload[2])
+    pps = float(client_payload[3])
+
+    # user_data contains list of contents of client request
         # [command, symbol, stock_amount, price per stock, user id of seller]
-
-
-    # get stock name of stock to be purchased
-    special_cursor.execute("SELECT stock_name FROM stocks WHERE user_id = ?", (other_user,))
-    o_stock_name = special_cursor.fetchall()
-
-    for o_name in o_stock_name:
-        temp = o_name
-
-    stock_name = str(temp[0])
-
-
-
-    # if the record the client seeks to purchase from does not exist
-    special_cursor.execute("SELECT stock_symbol FROM stocks WHERE id = ? AND stock_symbol = ?", (other_user, symbol,))
-    exists = special_cursor.fetchall()
-
-    if len(exists) == 0:
-        return "Record does not exist"
-    
-
-
-    # if the other user does not have the requested amount of stock
-    special_cursor.execute("SELECT stock_balance FROM stocks WHERE user_id = ? AND stock_symbol = ?", (other_user, symbol))
-    other_stock_amount = special_cursor.fetchall()
-
-    for o_amount in other_stock_amount:
-        temp = o_amount
-
-    get_o_amount = float(temp[0])
-  
-    if (get_o_amount - stock_amount < 0):
-        return_message = ("Requested user does not have enough stock. Available stock from user ", other_user, ": ", get_o_amount)
-        return return_message
-
-
-
-    #if client (user) tries to buy stock from their user_id
-    special_cursor.execute("SELECT user_id FROM stocks WHERE user_id = ? AND stock_symbol = ?", (other_user, symbol,))
-    stocks_stock_id = special_cursor.fetchall()
-
-    for s_id in stocks_stock_id:
-        temp = s_id
-
-    get_id = int(temp[0]) # convert from tuple
-    #print(get_id) # debug
-
-    if (get_id == 1):
-        return "You already own this stock."
 
 
     #Safe to attempt transaction. Begin transaction.
 
     # calculate cost per stock (stock amount + price per stock)
     # if user cannot afford, return message, otherwise continue
-    select_user_balance = "SELECT usd_balance FROM users WHERE id = 1" # only checking user 1
-    users_balance = execute_read_query(connection, select_user_balance)
+    special_cursor.execute("SELECT usd_balance FROM users WHERE id = ?", (this_user,)) # fix to check current user id
+    users_balance = special_cursor.fetchall()
 
     for u_balance in users_balance:
         temp = u_balance
@@ -200,11 +151,11 @@ def serverBuy(data):
     difference = (pps * stock_amount)
     new_user_balance = get_balance - difference
 
-    special_cursor.execute("UPDATE users SET usd_balance = ? WHERE id = 1", (new_user_balance,))
+    special_cursor.execute("UPDATE users SET usd_balance = ? WHERE id = ?", (new_user_balance, this_user,))
 
 
-    select_user_balance = "SELECT usd_balance FROM users WHERE id = 1" # only checking user 1
-    users_balance = execute_read_query(connection, select_user_balance)
+    special_cursor.execute("SELECT usd_balance FROM users WHERE id = ?", (this_user,)) # only checking user 1
+    users_balance = special_cursor.fetchall()
 
     for u_balance in users_balance:
         temp = u_balance
@@ -214,7 +165,7 @@ def serverBuy(data):
 
     new_stock_balance = 0.0
     # if user has no record for stock accumulated [no matching record] [does not exist for client user], add record
-    special_cursor.execute("SELECT stock_symbol FROM stocks WHERE user_id = 1 AND stock_symbol = ?", (symbol,))
+    special_cursor.execute("SELECT stock_symbol FROM stocks WHERE user_id = ? AND stock_symbol = ?", (this_user, symbol,))
     exists = special_cursor.fetchall()
     if len(exists) == 0:
         new_stock_balance = stock_amount
@@ -222,18 +173,18 @@ def serverBuy(data):
         #insert a new record
         insertion_query = """
         INSERT INTO
-        stocks (stock_symbol, stock_name, stock_balance, user_id)
+        stocks (stock_symbol, stock_balance, user_id)
         VALUES
-        (?, ?, ?, ?);
+        (?, ?, ?);
         """
         #need stock_name
-        tuple_items = (symbol, stock_name, stock_amount, 1)
+        tuple_items = (symbol, stock_amount, this_user)
         special_cursor.execute(insertion_query, tuple_items)
 
     else:
         
         #calculate additional stock
-        special_cursor.execute("SELECT stock_balance FROM stocks WHERE user_id = 1 AND stock_symbol = ?", (symbol,))
+        special_cursor.execute("SELECT stock_balance FROM stocks WHERE user_id = ? AND stock_symbol = ?", (this_user, symbol,))
         current_stock_amount = special_cursor.fetchall()
 
         for u_amounts in current_stock_amount:
@@ -244,75 +195,40 @@ def serverBuy(data):
         new_stock_balance = get_current_stock_amount + stock_amount
 
         # add stock to existing record
-        special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE user_id = 1", (new_stock_balance,))
+        special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE user_id = ?", (new_stock_balance, this_user,))
 
-
-
-    # update usd_balance and stock_balance for user being purchased from.
-    # update money (add)
-    special_cursor.execute("SELECT usd_balance FROM users WHERE id = ?", (other_user,))
-    other_balance = special_cursor.fetchall()
-
-    for o_balance in other_balance:
-        temp = o_balance
-
-    get_balance = float(temp[0])
-    #print(get_balance)
-
-    new_other_balance = get_balance + difference
-
-    special_cursor.execute("UPDATE users SET usd_balance = ? WHERE id = ?", (new_other_balance, other_user,))
-
-    #update stock amount (reduce)
-
-    special_cursor.execute("SELECT stock_balance FROM stocks WHERE user_id = ?", (other_user,))
-    other_balance = special_cursor.fetchall()
-
-    for o_balance in other_balance:
-        temp = o_balance
-
-    get_balance = float(temp[0])
-    #print(get_balance)
-
-    new_other_balance = get_balance - stock_amount
-
-    special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE user_id = ? AND stock_symbol = ?", (new_other_balance, other_user, symbol))
-
-    # commit changes
     connection.commit() 
 
     # succeeding return message
     return_message = "BOUGHT: New balance: " + str(new_stock_balance) + " " + symbol + ". USD balance $" + str(new_user_balance)
     return return_message
 
-def serverSell(data):
 
-    this_user = 1
-    symbol = str(data[1])
-    stock_amount = float(data[2])
-    pps = float(data[3])
-    other_user = int(data[4])
+
+
+
+
+
+def serverSell(this_user, client_payload):
+
+    #client_payload contains: BUY SYMBOL AMOUNT PPS
+    symbol = str(client_payload[1])
+    stock_amount = float(client_payload[2])
+    pps = float(client_payload[3])
+  
     # data contains list of contents of client request
         # [command, symbol, stock_amount, price per stock, user id of seller]
     
-    # user attempts to sell with themselves
-    if other_user == 1:
-        return "You cannot sell to yourself."
+
 
 
     # user sells a stock they do not own
-    special_cursor.execute("SELECT stock_symbol FROM stocks WHERE user_id = 1 AND stock_symbol = ?", (symbol,))
+    special_cursor.execute("SELECT stock_symbol FROM stocks WHERE user_id = ? AND stock_symbol = ?", (this_user, symbol,))
     exists = special_cursor.fetchall()
 
     if len(exists) == 0:
         return "You (user1) do not own this stock. \n Use LIST command to see owned stocks"
 
-    # buyer (user being sold to) does not exist
-    special_cursor.execute("SELECT user_name FROM users WHERE id = ?", (other_user,))
-    exists = special_cursor.fetchall()
-
-    if len(exists) == 0:
-        return "The user you are selling to does not exist."
 
 
     # user does not have enough stock to sell [less than the amount requested in record]
@@ -328,25 +244,12 @@ def serverSell(data):
         return "You do not have enough stock to complete this transaction."
 
 
-    # buyer cannot afford the stock
-    special_cursor.execute("SELECT usd_balance FROM  users WHERE id = ?", (other_user,))
-    initial_other_money = special_cursor.fetchall()
-
-    for o_balance in initial_other_money:
-        temp = o_balance
-
-    get_o_balance = float(temp[0])
-
-    difference = stock_amount * pps
-
-    if ((get_o_balance - difference) < 0):
-        return "Buyer has insufficient Funds"
 
 
     # transaction sequence -----
 
     # add to client user's usd balance
-    special_cursor.execute("SELECT usd_balance FROM users WHERE id = 1")
+    special_cursor.execute("SELECT usd_balance FROM users WHERE id = ?", (this_user,))
     user_bal = special_cursor.fetchall()
 
     for u_bal in user_bal:
@@ -354,7 +257,7 @@ def serverSell(data):
 
     get_u_bal = float(temp[0])
 
-    new_u_bal = get_u_bal + difference
+    new_u_bal = get_u_bal + (stock_amount * pps)
 
     special_cursor.execute("UPDATE users SET usd_balance = ? WHERE id = ?", (new_u_bal, this_user,))
 
@@ -371,69 +274,25 @@ def serverSell(data):
 
     special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE user_id = ? AND stock_symbol = ?", (new_u_stock_bal, this_user, symbol,))
 
-    # deduct from the buyer's usd balance
 
-    new_o_bal = get_o_balance - difference
-
-    special_cursor.execute("UPDATE users SET usd_balance = ? WHERE id = ?", (new_o_bal, other_user,))
-
-
-    # get name of stock
-    special_cursor.execute("SELECT stock_name FROM stocks WHERE stock_symbol = ? AND user_id = ?", (symbol, this_user,))
-    stock_name = special_cursor.fetchall()
-
-    for s_name in stock_name:
-        temp = s_name
-
-    get_stock_name = str(temp[0])
-
-
-    # see if a record containing the stock symbol exists for the buyer
-    special_cursor.execute("SELECT stock_name FROM stocks WHERE stock_symbol = ? AND user_id = ?", (symbol, other_user,))
-    exists = special_cursor.fetchall()
-
-    if len(exists) == 0:
-        # if buyer has no record to accumulate stock
-        #insert a new record
-        insertion_query = """
-        INSERT INTO
-        stocks (stock_symbol, stock_name, stock_balance, user_id)
-        VALUES
-        (?, ?, ?, ?);
-        """
-        #need stock_name
-        tuple_items = (symbol, get_stock_name, stock_amount, other_user)
-        special_cursor.execute(insertion_query, tuple_items)
-
-    else:
-        # if buyer has existing record to accumulate stock
-
-        # add to the buyer's stock_amount
-
-        special_cursor.execute("SELECT stock_balance FROM stocks WHERE stock_symbol = ? AND user_id = ?", (symbol, other_user,))
-        o_stock_bal = special_cursor.fetchall()
-
-        for o_s_bal in o_stock_bal:
-            temp = o_s_bal
-
-        
-        get_o_stock_bal = float(temp[0])
-
-        new_o_stock_bal = get_o_stock_bal + stock_amount
-        special_cursor.execute("UPDATE stocks SET stock_balance = ? WHERE user_id = ? AND stock_symbol = ?", (new_o_stock_bal, other_user, symbol,))    
-
-        
     # commit
     connection.commit()
 
     # succeeding message
     return_message = "SOLD: New balance: " + str(new_u_stock_bal) + " " + symbol + ". USD $" + str(new_u_bal)
-    
     return return_message
 
-def getBalance():
 
-    special_cursor.execute("SELECT first_name FROM users WHERE id = 1")
+
+
+
+
+
+
+
+def getBalance(this_user):
+
+    special_cursor.execute("SELECT first_name FROM users WHERE id = ?", (this_user,))
     fetch_first_name = special_cursor.fetchall()
 
     for f_name in fetch_first_name:
@@ -441,7 +300,7 @@ def getBalance():
 
     get_first_name = str(temp[0])
 
-    special_cursor.execute("SELECT last_name FROM users WHERE id = 1")
+    special_cursor.execute("SELECT last_name FROM users WHERE id = ?", (this_user,))
     fetch_last_name = special_cursor.fetchall()
 
     for l_name in fetch_last_name:
@@ -449,9 +308,9 @@ def getBalance():
 
     get_last_name = str(temp[0])
 
-    select_user_balance = "SELECT usd_balance FROM users WHERE id = 1"
+    special_cursor.execute("SELECT usd_balance FROM users WHERE id = ?", (this_user,))
     # users_balance first element convert it to float
-    users_balance = execute_read_query(connection, select_user_balance)
+    users_balance = special_cursor.fetchall()
 
     for u_balance in users_balance:
         temp = u_balance
@@ -512,7 +371,7 @@ def operations(socketclient, ip):
 
     
     login_status, root_status, shut_down_status = False
-    user_payload = [] # first name, last name, balance, user name, password, id
+    user_data = [] # first name, last name, balance, id
     #conversation loop
     while (True):
         
@@ -525,14 +384,14 @@ def operations(socketclient, ip):
         print("Recieved: " + str(message))
 
         # determine which command
-        data = message.split()
-        command = data[0]
+        payload = message.split()
+        command = payload[0]
 
 
         if command == "LOGIN":
             print("login")
             try:
-                login_status, root_status, user_payload = userLogin(data)
+                login_status, root_status, user_payload = userLogin(payload)
             except:
                 print("user does not exist.")
                 return_message = "Error: user does not exist."
@@ -543,7 +402,7 @@ def operations(socketclient, ip):
             # BUY
             if command == "BUY": 
                 # calculate and update
-                return_message = serverBuy(data)
+                return_message = serverBuy(user_data[3], payload)
                 return_message += "\n200 OK"
                 #send result
                 socketclient.send(return_message.encode("utf-8"))
@@ -551,7 +410,7 @@ def operations(socketclient, ip):
             # SELL
             elif command == "SELL": 
                 # calculate and update
-                return_message = serverSell(data)
+                return_message = serverSell(user_data, payload)
                 return_message += "\n200 OK"
                 # send result
                 socketclient.send(return_message.encode("utf-8"))
@@ -559,7 +418,7 @@ def operations(socketclient, ip):
             # BALANCE
             elif command == "BALANCE":
                 # Display the balance of user 1
-                return_message = getBalance()
+                return_message = getBalance(user_data[3])
                 # send balance
                 return_message += "\n200 OK"
                 print(return_message)
