@@ -1,0 +1,6 @@
+ elif debug_lock == 1:
+            print("buy")
+            message = "BUY AZM 2.14 3.55" # Command symbol pps amount
+        elif debug_lock == 2:
+            print("deposit")
+            message = "DEPOSIT 345.65" # command usd_amount

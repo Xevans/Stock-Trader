@@ -1,0 +1,8 @@
+Edge Cases:
+
+What if a user is already logged in?
+    - need to add a column to users table that indicates logged in as 1 and logged out as 0.
+    - if user logs in, check the login_status of the record being signed into.
+        - if false, log in.
+        - if true throw an exception: user is already logged in.
+        - on shut down, in main, update all user records log in status to false

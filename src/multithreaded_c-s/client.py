@@ -33,16 +33,8 @@ def userBuy():
         else:
             break
         
-    while True:
-        try:
-            userID = raw_input ("Which user would you like to buy from: ")
-            int(userID)
-        except:
-            print("Invalid input. Enter Number only.")
-        else:
-            break
 
-    message = ("BUY " + symbol + " " + str(stock_amount) + " " + str(price_per_stock) + " " + str(userID))
+    message = ("BUY " + symbol + " " + str(stock_amount) + " " + str(price_per_stock))
     return message
 
     
