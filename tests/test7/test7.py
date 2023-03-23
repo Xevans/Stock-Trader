@@ -470,9 +470,9 @@ def getBalance():
     return_message = "Balance for user, " + get_first_name + " " + get_last_name + ": $" + str(get_balance) + "\n"
     return return_message
 
+#need to check if root user to "use" getList()
 
-
-
+#LIST PART 1
 def getList():
     select_stocks = "SELECT id, stock_symbol, stock_balance, user_id FROM stocks"
     records = execute_read_query(connection, select_stocks)
@@ -488,13 +488,14 @@ def getList():
 
     return(return_message)
 
+#LIST PART 2
 def getUserList(user_id):
 
     special_cursor.execute("SELECT id, stock_symbol, stock_balance FROM stocks WHERE user_id = ?", (user_id,))
     records = special_cursor.fetchall()
     
     return_message = ""
-    
+
     for tuple in records:
         return_message += "\n"
         for item in tuple:
@@ -509,7 +510,7 @@ def getUserList(user_id):
 
 
 
-
+#WHO
 def getActiveUsers():
     return_message = ""
 

@@ -21,14 +21,17 @@ in client, allow user to enter an ip address
 
 in server, the client should only be able to login or quit if login_success & root_user is FALSE
 
-Test outline:
+---------------------------------------------------
+Testing Environments outline:
 
 Test 5: LOGIN testing (Done)
 Test 6: LOGOUT testing (Done)
 Test 7: WHO and LIST command testing (partially done. Multithreaded testing needed)
 Test 8: LOOKUP testing (Done)
 Test 9: DEPOSIT (Done)
+Test 10: Full integration test with scripted inputs (single-thread)
 
+---------------------------------------------------
 3/14
 Handling Active user tracking:
     change ip list to active_users
@@ -108,3 +111,8 @@ Remaining tasks:
         - re-test each module with a minimum of 3 users threads.
 
     - rename user payload in operations to user_data
+
+3/22
+
+special cursor object cannot be used by any thread. Since it was created in another thread, other threads must create and use their own
+

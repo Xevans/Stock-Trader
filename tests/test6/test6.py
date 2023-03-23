@@ -545,8 +545,6 @@ def operations():
         else:
             message = "LOGIN james123 eds23"
 
-
-
         # determine which command
         data = message.split()
         command = data[0]
