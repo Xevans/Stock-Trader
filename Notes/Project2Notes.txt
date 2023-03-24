@@ -116,3 +116,8 @@ Remaining tasks:
 
 special cursor object cannot be used by any thread. Since it was created in another thread, other threads must create and use their own
 
+3/23
+    Tasks:
+        Prepare each funcation with a thread for a single user 
+
+    TEST 11 Created for a multithreading base 
