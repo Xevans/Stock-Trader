@@ -675,7 +675,9 @@ def operations(ip):
                     debug_lock += 1
                 else:
                     print("Not A Root User, cannot access this function!")
-                    break
+                    debug_lock += 1
+                    #break
+                    
             
 
             #LOOKUP
