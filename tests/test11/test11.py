@@ -665,12 +665,17 @@ def operations(ip):
                 debug_lock += 1
             
             #WHO
+            #command is only allowed if the user is a root-user
             elif command == "WHO":
-                print("WHO")
-                return_message = getActiveUsers()
+                if root_status == True:
+                    print("WHO")
+                    return_message = getActiveUsers()
 
-                print(return_message)
-                debug_lock += 1
+                    print(return_message)
+                    debug_lock += 1
+                else:
+                    print("not a root user")
+                    # send err message to client
 
 
             #LOOKUP
