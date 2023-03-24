@@ -674,9 +674,9 @@ def operations(ip):
                     print(return_message)
                     debug_lock += 1
                 else:
-                    print("not a root user")
-                    # send err message to client
-
+                    print("Not A Root User, cannot access this function!")
+                    break
+            
 
             #LOOKUP
             elif command == "LOOKUP":
