@@ -507,6 +507,28 @@ shut_down_status = False
 
 
 
+def clientHander (client_socket):
+    #put code for what we need to do with the client
+    
+    print("I made it to the client with IP: "  +client_socket+ "!")
+
+    pass
+
+
+def serverStart():
+    serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #SOCK_STREAM to use TCP socket 
+    host = socket.gethostname()
+    port = 5310
+    serverSocket.bind((host,port)) #random host and random port for now 
+    serverSocket.listen(10)
+    print("In serverStart")
+    while(True):
+        print("in the while loop")
+
+        client_socket, address = serverSocket.accept()
+        client_thread = threading.Thread(target=clientHander, args= (client_socket))
+        client_thread.start()
+
 
 
 def operations(ip):
@@ -606,6 +628,7 @@ def operations(ip):
             break
 
         # determine which command
+        
         payload = message.split()
         command = payload[0]
 
@@ -798,8 +821,11 @@ def main():
     #port = 5310
     #s.bind((host, port))
     #s.listen(10) #10 user support   
-    
     fake_ip = "123.12.43.23"
+    print("before server start")
+    clientHander(fake_ip)
+    serverStart()
+    
 
     #socketclient, address = s.accept()
     #print("Connection recieved from another terminal") #I.E. Client-Server Connection Successful
