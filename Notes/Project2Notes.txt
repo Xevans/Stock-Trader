@@ -21,17 +21,19 @@ in client, allow user to enter an ip address
 
 in server, the client should only be able to login or quit if login_success & root_user is FALSE
 
----------------------------------------------------
-Testing Environments outline:
+
+-----------------------------------------------------------------------
+Test outline:
 
 Test 5: LOGIN testing (Done)
-Test 6: LOGOUT testing (Done)
+Test 6: LOGOUT testing (Done)0
 Test 7: WHO and LIST command testing (partially done. Multithreaded testing needed)
 Test 8: LOOKUP testing (Done)
 Test 9: DEPOSIT (Done)
-Test 10: Full integration test with scripted inputs (single-thread)
+Test 10: Test server.py functionality with all above modules integrated. (Done)
 
----------------------------------------------------
+
+---------------------------------------------------------------
 3/14
 Handling Active user tracking:
     change ip list to active_users
@@ -43,8 +45,8 @@ Handling Active user tracking:
         The zipping only occurs in WHO function when ran
 
         when a user quits, remove the matching ip and user name from the list
-    
 
+---------------------------------------------------------------
 3/14 - Xavier
 Login unit tested in test5 and is working correctly
     - server accepts command and checks user provided user name and password against database
@@ -58,13 +60,13 @@ Login unit tested in test5 and is working correctly
 
 Addressed issue with database where database initialized duplicate records on subsequent runs.
 DO NOT KEEP PASSWORD IN PAYLOAD (BAD)
-
+---------------------------------------------------------------
 
 3/15
 
 To allow for multiple roots. Add a column in table called isRoot. 0 or 1. If 1: user is a root, otherwise not a root (Done)
 
-
+-------------------------------
 3/19 - Xavier
 
 implementing LOOKUP. server recieves LOOKUP followed by a stock symbol.
@@ -97,9 +99,6 @@ Current task: clean up buy and sell methods to be arbitrary as listed in the abo
 Remaining tasks:
     - Clean up buy method (server.py)
     - Clean up sell method (server.py)
-
-
-    
     - Add tested modules to server.py
         - test each individually
             - use debug lock and predetermined inputs to test modules
@@ -111,8 +110,45 @@ Remaining tasks:
         - re-test each module with a minimum of 3 users threads.
 
     - rename user payload in operations to user_data
+----------------------------------------------------------------------------
 
-3/22
+    3/20 - Ben & Xavier 
+    LOGIN
+        Moved over test5.py login status to server.py 
 
-special cursor object cannot be used by any thread. Since it was created in another thread, other threads must create and use their own
+    LOGOUT 
+        testing implemented, checking if user is logged in already
 
+    LIST 
+
+        Put the new list command and commented out LIST'
+        Put Root User's getList() replacing the old getList()
+        Put Non-Root User's getuserList() @ 
+        Included are WHO by getActiveUsers()    
+        
+        Included command functionalities of WHO 
+    
+    LOOKUP 
+
+        implemented lookup
+
+    DEPOSIT
+        implemented desposit
+
+---------------------------------------------------------------------------
+3/23
+
+Integration testing complete.
+
+Remaining tasks:
+
+    -  Modify client to accept an ip address at the start of program.
+    -  modify client to be able to send commands for new functionalities (Done)
+    -  test client server with new functionalities - single thread
+    
+    - modify server for multi-threaded useage (add thread locks around critical sections). (Done)
+        - re-test each module with a minimum of 3 users threads.
+
+    - ip address of server should be command line parameter for client. so it knows where to connect.
+    - need lock for recieving messages?
+    - how to shut the server down gracefully?

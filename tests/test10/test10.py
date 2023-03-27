@@ -667,9 +667,13 @@ def operations(ip):
             #WHO
             elif command == "WHO":
                 print("WHO")
-                return_message = getActiveUsers()
+                if root_status == True:
+                    return_message = getActiveUsers()
+                    print(return_message)
+                else:
+                    return_message = "Not a root user."
+                    print(return_message)
 
-                print(return_message)
                 debug_lock += 1
 
 
