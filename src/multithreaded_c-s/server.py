@@ -55,7 +55,8 @@ CREATE TABLE IF NOT EXISTS users (
    user_name TEXT NOT NULL,
    password TEXT,
    root_status INTEGER,
-   usd_balance REAL NOT NULL
+   usd_balance REAL NOT NULL,
+   logged_in_status INTEGER
 );
 """
 
@@ -85,21 +86,24 @@ if (len(special_cursor.fetchall()) < 1):
     # define some data to add to user table
     create_user = """
     INSERT OR IGNORE INTO
-    users (first_name, last_name, user_name, password, usd_balance, root_status)
+    users (first_name, last_name, user_name, password, usd_balance, root_status, logged_in_status)
     VALUES
-    ("James", "Ed", "james123", "eds23", 500.00, 0),
-    ("Mary", "Toodles", "Mary", "Mary01", 1000.00, 0),
-    ("John","Johnson","John","John01", 50000.00, 0),
-    ("Moe","Skull","Moe","Moe01", 2000.00, 0),
-    ("Ben","Poorards","ben123","pokemon321", 30000.00, 0),
-    ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00, 0),
-    ("Root", "Roots", "Root", "Root01", 30000.00, 1),
-    ("Brandon","Linux","brandon123","toby321", 50000.00, 0);
+    ("James", "Ed", "james123", "eds23", 500.00, 0, 0),
+    ("Mary", "Toodles", "Mary", "Mary01", 1000.00, 0, 0),
+    ("John","Johnson","John","John01", 50000.00, 0, 0),
+    ("Moe","Skull","Moe","Moe01", 2000.00, 0, 0),
+    ("Ben","Poorards","ben123","pokemon321", 30000.00, 0, 0),
+    ("Xavier","Devons","xavier123","rivercitygirls321", 100000.00, 0, 0),
+    ("Root", "Roots", "Root", "Root01", 30000.00, 1, 0),
+    ("Brandon","Linux","brandon123","toby321", 50000.00, 0, 0);
 
     """
 
     # add data to user table
     execute_query(connection, create_user)  
+else:
+    special_cursor.execute("UPDATE users SET logged_in_status = 0")
+    connection.commit()
 
 # if table is empty insert the following users
 special_cursor.execute("SELECT * FROM users")
@@ -162,6 +166,7 @@ def serverBuy(this_user, client_payload):
     get_balance = float(temp[0])
     
     if (get_balance - (pps * stock_amount) < 0):
+        p_lock.release()
         return "Insufficient funds"
 
     
@@ -254,6 +259,7 @@ def serverSell(this_user, client_payload):
     exists = thread_cursor.fetchall()
 
     if len(exists) == 0:
+        p_lock.release()
         return "You (user1) do not own this stock. \n Use LIST command to see owned stocks"
 
 
@@ -268,6 +274,7 @@ def serverSell(this_user, client_payload):
     get_init_stock_bal = float(temp[0])
 
     if ((get_init_stock_bal - stock_amount) < 0):
+        p_lock.release()
         return "You do not have enough stock to complete this transaction."
 
     # transaction sequence -----
@@ -455,9 +462,8 @@ def getUserList(user_id):
 def getActiveUsers():
     return_message = ""
 
-    for name in active_user_first_names:
-        for ip in active_user_ip_addresses:
-            return_message += name + "  " + ip + "\n"
+    for i in range(len(active_user_first_names)):
+        return_message += active_user_first_names[i] + " " + active_user_ip_addresses[i] + "\n"
     return return_message 
 
 
@@ -503,6 +509,7 @@ def lookup(symbol, id):
 def userLogin(user_name, password):
 
     p_lock.acquire()
+    print("someone is loggin in")
 
     #following two lines must exist in each server function with db operations above
     #special cursor must be replaced with thread cursor.
@@ -514,10 +521,14 @@ def userLogin(user_name, password):
     root_status = False
 
     # user sells a stock they do not own
-    thread_cursor.execute("SELECT first_name, last_name, usd_balance, id, root_status FROM users WHERE user_name = ? AND password = ?", (user_name, password,))
+    # fetch a login status (column need to add)
+    # if login_status = 1, return -1; 
+    # //update execpt to show replacment error message (user is logged in already or not availble)
+    thread_cursor.execute("SELECT first_name, last_name, usd_balance, id, root_status, logged_in_status FROM users WHERE user_name = ? AND password = ?", (user_name, password,))
     exists = thread_cursor.fetchall()
 
     if len(exists) == 0:
+        p_lock.release()
         return -1
 
     # extract data from tuple and return
@@ -526,15 +537,24 @@ def userLogin(user_name, password):
             print(item) #debug
             return_data.append(item)
 
+    if(return_data[5] == 1):
+        p_lock.release()
+        return -1
+
     login_staus = True
 
     #if the user is root
     if int(return_data[4]) == 1:
         root_status = True
     
+
+    thread_cursor.execute("UPDATE users SET logged_in_status = ? WHERE id = ?", (1, return_data[3],))
+    thread_connection.commit() #saves to database
+
     thread_connection.close()
 
     p_lock.release()
+    print("someone has logged in")
     return login_staus, root_status, return_data
 
 def updateShutdown():
@@ -561,6 +581,16 @@ def decBusyCount():
 def getBusyCount():
     global busy_count
     return busy_count
+
+
+def logout(this_user):
+    p_lock.acquire()
+    thread_connection = create_connection('data.db')
+    thread_cursor = thread_connection.cursor()
+    
+    thread_cursor.execute("UPDATE users SET logged_in_status = 0 WHERE id = ?", (this_user,))
+    thread_connection.commit()
+    p_lock.release()
 
 active_user_first_names = []
 active_user_ip_addresses = []
@@ -609,17 +639,18 @@ def operations(socketclient, ip):
 
         if command == "LOGIN":
 
+            print("Here")
+
             user_name = payload[1]
             password = payload[2]
 
             if login_status == True:
                 return_message = "Error: You are already logged in."
                 socketclient.send(return_message.encode("utf-8"))
+                
                 decBusyCount()
                 break
             
-            login_status, root_status, user_data = userLogin(user_name, password)
-
             try:
                 login_status, root_status, user_data = userLogin(user_name, password)
             except:
@@ -647,11 +678,13 @@ def operations(socketclient, ip):
 
             #log out user if logged in
             if login_status == True:
+                this_user_id = user_data[3]
                 login_status = False
                 root_status = False
                 active_user_first_names.remove(user_data[0])
                 active_user_ip_addresses.remove(ip)
-                user_data.clear() # not necessary since each thread has its own instance.
+                logout(this_user_id)
+                del user_data[:] # not necessary since each thread has its own instance.
             
             decBusyCount()
             break
@@ -660,11 +693,13 @@ def operations(socketclient, ip):
             
             #LOGOUT
             if command == "LOGOUT":
+                this_user_id = user_data[3]
                 login_status = False
                 root_status = False
                 active_user_first_names.remove(user_data[0])
                 active_user_ip_addresses.remove(ip)
-                user_data.clear() # not necessary since each thread has its own instance.
+                logout(this_user_id)
+                del user_data[:] # not necessary since each thread has its own instance.
                 
                 # send message
                 return_message += "\n200 OK"
@@ -675,6 +710,7 @@ def operations(socketclient, ip):
             #WHO
             elif command == "WHO":
                 if root_status == True:
+                    print("Debug: " , active_user_first_names , "\n" , active_user_ip_addresses)
                     return_message = getActiveUsers()
                     return_message += "\n200 OK"
                     socketclient.send(return_message.encode("utf-8"))
@@ -728,7 +764,8 @@ def operations(socketclient, ip):
             # SELL
             elif command == "SELL": 
                 # calculate and update
-                return_message = serverSell(user_data, payload)
+                this_user_id = user_data[3]
+                return_message = serverSell(this_user_id, payload)
                 return_message += "\n200 OK"
                 # send result
                 socketclient.send(return_message.encode("utf-8"))
@@ -780,12 +817,11 @@ def operations(socketclient, ip):
                     socketclient.send(return_message.encode("utf-8"))
 
                 decBusyCount()
-
-            else:
-                # not valid command
-                return_message = "\nError, you input an invalid command!\n"
-                socketclient.send(return_message.encode("utf-8"))
-                decBusyCount()
+        else:
+            print("user is not logged in.")
+            return_message = "Error: Must log in to use this command!"
+            socketclient.send(return_message.encode("utf-8"))
+            # send message to client
 
     socketclient.close()  # leaving operations  
 
@@ -811,7 +847,7 @@ def main():
 
         thread = Thread(target = operations, args = (socketclient, address[0], ))
         thread.start()
-        thread.join()
+        #thread.join()
         
 
 
