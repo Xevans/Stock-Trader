@@ -617,6 +617,8 @@ def operations(socketclient, ip):
                 socketclient.send(return_message.encode("utf-8"))
                 decBusyCount()
                 break
+            
+            login_status, root_status, user_data = userLogin(user_name, password)
 
             try:
                 login_status, root_status, user_data = userLogin(user_name, password)
@@ -632,6 +634,8 @@ def operations(socketclient, ip):
                 return_message = "200 OK"
                 socketclient.send(return_message.encode("utf-8"))
                 decBusyCount()
+            
+            continue
         
 
         #QUIT
@@ -782,13 +786,6 @@ def operations(socketclient, ip):
                 return_message = "\nError, you input an invalid command!\n"
                 socketclient.send(return_message.encode("utf-8"))
                 decBusyCount()
-
-        else:
-            #invalid input
-            # send message to client
-            return_message = "\nERROR, Not logged in or invlid command!\n"
-            socketclient.send(return_message.encode("utf-8"))
-            decBusyCount()
 
     socketclient.close()  # leaving operations  
 
