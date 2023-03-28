@@ -804,7 +804,7 @@ def main():
     #start_new_thread(operations, (socketclient, address[0],))
     thread = Thread(target = operations, args = (fake_ip, ))
     thread.start()
-    thread.join()
+    #thread.join()
 
         
 
