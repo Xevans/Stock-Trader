@@ -601,11 +601,15 @@ def operations(socketclient, ip):
     login_status = False 
     root_status = False
     shut_down_status = False
+    terminated = False
     debug_lock = 0
     user_data = [] # first name, last name, balance, id
 
     #conversation loop
-    while (True): 
+    while (True):
+
+        if terminated == True:
+            break
 
         message = socketclient.recv(1024)
         if not message:
@@ -620,11 +624,12 @@ def operations(socketclient, ip):
         # otherwise call function to update global counter of busy threads.
         global busy_count
 
-        if (busy_count == 0 and shut_down_status == True):
-            return_message = "Error Server shutting down"
+        if (shut_down_status == True):
+            return_message = "Error: Server is down"
             socketclient.send(return_message.encode("utf-8"))
 
             socketclient.close()
+            break
 
         else:
             incBusyCount()
@@ -809,7 +814,11 @@ def operations(socketclient, ip):
                     # shut down server
                     # when returning to main thread. Server will shut down when it sees the status change
                     updateShutdown()
-
+                    
+                    socketclient.close()  # leaving operations
+                    terminated = True
+                    
+                    
                 else:
                     print("not a root user")
                     # send err message to client
@@ -840,7 +849,12 @@ def main():
 
     while True:
         print("Waiting for connection...")
-        socketclient, address = s.accept()
+        if(shut_down_status == 0):
+            socketclient, address = s.accept()
+        else:
+            socketclient, address = s.close()
+
+
         #p_lock.acquire()
         print("Connection recieved from another terminal") #I.E. Client-Server Connection Successful
         print("Currently connected to: ", address[0], ": ", address[1])
