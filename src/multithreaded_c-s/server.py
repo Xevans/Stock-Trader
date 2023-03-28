@@ -1,8 +1,8 @@
 import socket
 import sqlite3
 from sqlite3 import Error
-from _thread import *
 import threading
+from threading import Thread
 
 #****************************************************************************************
 #SQLITE3 setup
@@ -125,7 +125,11 @@ if (len(special_cursor.fetchall()) < 1):
 #****************************************************************************************
 
 #Server.py
+
+#globals
 p_lock = threading.Lock()
+shut_down_status = False
+busy_count = 0
 
 #data is a list
 #BUY
@@ -133,7 +137,7 @@ def serverBuy(this_user, client_payload):
 
     p_lock.acquire()
 
-    thread_connection = create_connection('src/data.db')
+    thread_connection = create_connection('data.db')
     thread_cursor = thread_connection.cursor()
 
     #client_payload contains: BUY SYMBOL AMOUNT PPS
@@ -231,7 +235,7 @@ def serverSell(this_user, client_payload):
 
     p_lock.acquire()
 
-    thread_connection = create_connection('src/data.db')
+    thread_connection = create_connection('data.db')
     thread_cursor = thread_connection.cursor()
 
     #client_payload contains: BUY SYMBOL AMOUNT PPS
@@ -313,7 +317,7 @@ def getBalance(this_user):
 
     p_lock.acquire()
 
-    thread_connection = create_connection('src/data.db')
+    thread_connection = create_connection('data.db')
     thread_cursor = thread_connection.cursor()
 
     thread_cursor.execute("SELECT first_name FROM users WHERE id = ?", (this_user,))
@@ -358,7 +362,7 @@ def deposit(amount, user_id):
 
     p_lock.acquire()
 
-    thread_connection = create_connection('src/data.db')
+    thread_connection = create_connection('data.db')
     thread_cursor = thread_connection.cursor()
 
     thread_cursor.execute("SELECT usd_balance FROM users WHERE id = ?", (user_id,))
@@ -398,7 +402,7 @@ def deposit(amount, user_id):
 def getList():
 
     p_lock.acquire()
-    thread_connection = create_connection('src/data.db')
+    thread_connection = create_connection('data.db')
 
     select_stocks = "SELECT id, stock_symbol, stock_balance, user_id FROM stocks"
     records = execute_read_query(thread_connection, select_stocks)
@@ -424,7 +428,7 @@ def getUserList(user_id):
 
     p_lock.acquire()
 
-    thread_connection = create_connection('src/data.db')
+    thread_connection = create_connection('data.db')
     thread_cursor = thread_connection.cursor()
 
     thread_cursor.execute("SELECT id, stock_symbol, stock_balance FROM stocks WHERE user_id = ?", (user_id,))
@@ -467,7 +471,7 @@ def lookup(symbol, id):
     #special_cursor.execute("SELECT stock_symbol, user_id FROM stocks WHERE stock_symbol = ? AND user_id = ?", (symbol, payload[3]))
     #results = special_cursor.fetchall()
 
-    thread_connection = create_connection('src/data.db')
+    thread_connection = create_connection('data.db')
     thread_cursor = thread_connection.cursor()
 
     partial_symbol = "%" + symbol + "%"
@@ -502,7 +506,7 @@ def userLogin(user_name, password):
 
     #following two lines must exist in each server function with db operations above
     #special cursor must be replaced with thread cursor.
-    thread_connection = create_connection('src/data.db')
+    thread_connection = create_connection('data.db')
     thread_cursor = thread_connection.cursor()
     
     return_data = []
@@ -533,12 +537,33 @@ def userLogin(user_name, password):
     p_lock.release()
     return login_staus, root_status, return_data
 
+def updateShutdown():
 
+    p_lock.acquire()
+    global shut_down_status
+    shut_down_status = True
+    p_lock.release()
 
+def checkShutdownStatus():
+
+    p_lock.acquire()
+    return shut_down_status
+    p_lock.release()
+
+def incBusyCount():
+    global busy_count
+    busy_count += 1
+
+def decBusyCount():
+    global busy_count
+    busy_count -= 1
+
+def getBusyCount():
+    global busy_count
+    return busy_count
 
 active_user_first_names = []
 active_user_ip_addresses = []
-shut_down_status = False
 
 
 def operations(socketclient, ip):
@@ -563,6 +588,17 @@ def operations(socketclient, ip):
             # if both these conditions are true, do not finish request. return message that server is down. then close connection
 
         # otherwise call function to update global counter of busy threads.
+        global busy_count
+
+        if (busy_count == 0 and shut_down_status == True):
+            return_message = "Error Server shutting down"
+            socketclient.send(return_message.encode("utf-8"))
+
+            socketclient.close()
+
+        else:
+            incBusyCount()
+
 
         # need calls in each block to decrement busy count
 
@@ -572,26 +608,30 @@ def operations(socketclient, ip):
 
 
         if command == "LOGIN":
+
             user_name = payload[1]
             password = payload[2]
 
             if login_status == True:
                 return_message = "Error: You are already logged in."
                 socketclient.send(return_message.encode("utf-8"))
+                decBusyCount()
                 break
-            
+
             try:
                 login_status, root_status, user_data = userLogin(user_name, password)
             except:
                 # could not log in. let client know
                 return_message = "Error: User record not found or not available."
                 socketclient.send(return_message.encode("utf-8"))
+                decBusyCount()
             else:
                 # login successful, let client know
                 active_user_first_names.append(user_data[0])
                 active_user_ip_addresses.append(ip)
                 return_message = "200 OK"
                 socketclient.send(return_message.encode("utf-8"))
+                decBusyCount()
         
 
         #QUIT
@@ -608,7 +648,8 @@ def operations(socketclient, ip):
                 active_user_first_names.remove(user_data[0])
                 active_user_ip_addresses.remove(ip)
                 user_data.clear() # not necessary since each thread has its own instance.
-
+            
+            decBusyCount()
             break
             
         if login_status == True:
@@ -624,6 +665,8 @@ def operations(socketclient, ip):
                 # send message
                 return_message += "\n200 OK"
                 socketclient.send(return_message.encode("utf-8"))
+
+                decBusyCount()
             
             #WHO
             elif command == "WHO":
@@ -635,6 +678,8 @@ def operations(socketclient, ip):
                     return_message = "Not a root user."
                     return_message += "\n200 OK"
                     socketclient.send(return_message.encode("utf-8"))
+
+                decBusyCount()
 
                 # call function to decrement busy thread count
 
@@ -652,6 +697,7 @@ def operations(socketclient, ip):
                     return_message += "\n200 OK"
 
                 socketclient.send(return_message.encode("utf-8"))
+                decBusyCount()
                 
 
             # BUY
@@ -662,6 +708,7 @@ def operations(socketclient, ip):
                 return_message += "\n200 OK"
                 #send result
                 socketclient.send(return_message.encode("utf-8"))
+                decBusyCount()
             
             #DEPOSIT
             elif command == "DEPOSIT":
@@ -672,6 +719,7 @@ def operations(socketclient, ip):
                 return_message = "New balance: " + str(new_balance)
                 return_message += "\n200 OK"
                 socketclient.send(return_message.encode("utf-8"))
+                decBusyCount()
 
             # SELL
             elif command == "SELL": 
@@ -680,6 +728,7 @@ def operations(socketclient, ip):
                 return_message += "\n200 OK"
                 # send result
                 socketclient.send(return_message.encode("utf-8"))
+                decBusyCount()
 
             # BALANCE
             elif command == "BALANCE":
@@ -688,8 +737,8 @@ def operations(socketclient, ip):
                 return_message = getBalance(this_user_id)
                 # send balance
                 return_message += "\n200 OK"
-                print(return_message)
-                #socketclient.send(return_message.encode("utf-8"))
+                socketclient.send(return_message.encode("utf-8"))
+                decBusyCount()
 
 
             #LIST
@@ -705,27 +754,41 @@ def operations(socketclient, ip):
 
                 return_message += "\n200 OK"
                 socketclient.send(return_message.encode("utf-8"))
+                decBusyCount()
 
             #SHUTDOWN
             elif command == "SHUTDOWN":
                 if root_status == True:
                     # Shutdown
                     return_message = "SHUTDOWN"
-                    # send
+                    # sendfff
                     return_message += "\n200 OK"
                     socketclient.send(return_message.encode("utf-8"))
                    
                     # shut down server
                     # when returning to main thread. Server will shut down when it sees the status change
-                    shut_down_status = True
+                    updateShutdown()
 
                 else:
                     print("not a root user")
                     # send err message to client
+                    return_message = "You don't have access to that command!"
+                    socketclient.send(return_message.encode("utf-8"))
+
+                decBusyCount()
+
+            else:
+                # not valid command
+                return_message = "\nError, you input an invalid command!\n"
+                socketclient.send(return_message.encode("utf-8"))
+                decBusyCount()
 
         else:
-            print("user is not logged in.")
+            #invalid input
             # send message to client
+            return_message = "\nERROR, Not logged in or invlid command!\n"
+            socketclient.send(return_message.encode("utf-8"))
+            decBusyCount()
 
     socketclient.close()  # leaving operations  
 
@@ -749,7 +812,7 @@ def main():
         print("Connection recieved from another terminal") #I.E. Client-Server Connection Successful
         print("Currently connected to: ", address[0], ": ", address[1])
 
-        thread = thread(target = operations, args = (socketclient, address[0], ))
+        thread = Thread(target = operations, args = (socketclient, address[0], ))
         thread.start()
         thread.join()
         

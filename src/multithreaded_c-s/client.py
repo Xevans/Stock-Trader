@@ -211,7 +211,6 @@ while (True):
         #send(message)
         reply = s.recv(1024) #reply from server
         print("\n" + reply + "\n")
-        break
 
     elif message == "11":
         # End Session
@@ -226,7 +225,6 @@ while (True):
 
     else:
         print("Invalid Input, Try Again\n")
-        showCommands()
 
 s.close()
     
