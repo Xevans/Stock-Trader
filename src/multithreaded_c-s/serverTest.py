@@ -134,6 +134,7 @@ if (len(special_cursor.fetchall()) < 1):
 p_lock = threading.Lock()
 shut_down_status = False
 busy_count = 0
+threads = []
 
 #data is a list
 #BUY
@@ -624,15 +625,15 @@ def operations(socketclient, ip):
         # otherwise call function to update global counter of busy threads.
         global busy_count
 
-        if (shut_down_status == True):
-            return_message = "Error: Server is down"
-            socketclient.send(return_message.encode("utf-8"))
+        #if (shut_down_status == True):
+         #   return_message = "Error: Server is down"
+          #  socketclient.send(return_message.encode("utf-8"))
 
-            socketclient.close()
-            break
+           # socketclient.close()
+            #break
 
-        else:
-            incBusyCount()
+        #else:
+         #   incBusyCount()
 
 
         # need calls in each block to decrement busy count
@@ -807,16 +808,16 @@ def operations(socketclient, ip):
                 if root_status == True:
                     # Shutdown
                     return_message = "SHUTDOWN"
-                    # sendfff
+                    # send
                     return_message += "\n200 OK"
                     socketclient.send(return_message.encode("utf-8"))
                    
                     # shut down server
                     # when returning to main thread. Server will shut down when it sees the status change
                     updateShutdown()
-                    
+                    shutdown_server()
                     socketclient.close()  # leaving operations
-                    terminated = True
+                    #terminated = True
                     
                     
                 else:
@@ -832,11 +833,17 @@ def operations(socketclient, ip):
             socketclient.send(return_message.encode("utf-8"))
             # send message to client
 
-    socketclient.close()  # leaving operations  
+    socketclient.close()  # leaving operations
+    print("Connection closed with", ip)  
 
+should_shutdown = False
+# define function to shut down server
+def shutdown_server():
+    global should_shutdown
+    print("Shutting down the server...")
+    should_shutdown = True
 
-############ MAIN ############
-# establish connections
+# modify main() to check flag variable
 def main():
     s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     host = socket.gethostname()
@@ -845,21 +852,28 @@ def main():
     s.bind((host, port))
     s.listen(10) #10 user support 
 
-
-    while True:
+    while not should_shutdown:
         print("Waiting for connection...")
-        
-        socketclient, address = s.accept()
+        if shut_down_status:
+            return_message += "\nServer is unavailable"
+            socketclient.send(return_message.encode("utf-8"))
+            socketclient.close()
+            continue
 
-        #p_lock.acquire()
-        print("Connection recieved from another terminal") #I.E. Client-Server Connection Successful
+        socketclient, address = s.accept()
+        print("Connection received from another terminal") #I.E. Client-Server Connection Successful
         print("Currently connected to: ", address[0], ": ", address[1])
 
         thread = Thread(target = operations, args = (socketclient, address[0], ))
         thread.start()
-        #thread.join()
-        
 
+    # close all client sockets
+    for thread in threads:
+        if thread != Thread.current_thread():
+            thread.join()
+    # close the server socket
+    s.close()
+    print("Server shut down successfully.")
 
-###Start
+#START
 main()
