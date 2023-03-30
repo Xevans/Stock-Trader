@@ -835,6 +835,7 @@ def operations(socketclient, ip):
     socketclient.close()  # leaving operations  
 
 
+
 ############ MAIN ############
 # establish connections
 def main():
@@ -848,8 +849,11 @@ def main():
 
     while True:
         print("Waiting for connection...")
-        
-        socketclient, address = s.accept()
+        if(shut_down_status == 0):
+            socketclient, address = s.accept()
+        else:
+            socketclient, address = s.close()
+
 
         #p_lock.acquire()
         print("Connection recieved from another terminal") #I.E. Client-Server Connection Successful
